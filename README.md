@@ -2,7 +2,7 @@
 
 A sister extension for [NPC Book](https://github.com/lalzy/ST-NPC-Book) that gives every NPC, and you, a character sheet (intended for use with the **GURPS® system**). Note that **No rules data is included** so you need to define all this yourself in **Extensions → NPC Book Character Sheet → Rules** (see [RULES.md](RULES.md)). Until you do, the sheet still works as a plain record: it stores what you type, sums trait points and lets you roll against any value.
 
-![GURPS sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image1.png)
+![character sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image1.png)
 
 # Install
 In SillyTavern, open **Extensions** (the stacked-cubes icon) → **Install extension**, paste this link and install:
@@ -11,7 +11,7 @@ In SillyTavern, open **Extensions** (the stacked-cubes icon) → **Install exten
 https://github.com/lalzy/ST-NPCBook-Character-Sheets
 ```
 
-Or install it manually: download this repository and put the files in `SillyTavern/data/<your-user>/extensions/NPC-Book-GURPS/`, then reload SillyTavern.
+Or install it manually: download this repository and put the files in `SillyTavern/data/<your-user>/extensions/NPC-Book-character-sheet/`, then reload SillyTavern.
 
 **If NPC Book is missing, you get a warning a few seconds after loading and nothing else happens.**
 
@@ -20,9 +20,9 @@ Or install it manually: download this repository and put the files in `SillyTave
 ### During Chat
 To open current character(or user)'s stat sheet, click on the chat sheet and press the new Character Sheet button
 
-![GURPS sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image2.png)
+![Character sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image2.png)
 
-![GURPS sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image3.png)
+![[Character sheet](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/image3.png)
 
 ### New NPC Sheets:
 Press the ![Generate Icon](https://raw.githubusercontent.com/lalzy/ST-NPCBook-Character-Sheets/refs/heads/main/icon.svg) button ontop of the character bar in the chat to toggle on/off character-sheet generation on new NPCs.
