@@ -1,0 +1,12 @@
+{
+    "display_name": "NPC Book Character Sheet (for use with GURPS®)",
+    "loading_order": 110,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "NPC Book",
+    "version": "2.3.3",
+    "homePage": "",
+    "auto_update": false
+}

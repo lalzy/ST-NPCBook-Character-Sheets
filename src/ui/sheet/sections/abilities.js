@@ -1,0 +1,75 @@
+import { skillAttrs, ABILITY_KINDS, ABILITY_USES, ABILITY_FX, ABILITY_AIMS, ABILITY_STATS, resistAttrs } from '../../../engine/index.js';
+import { esc } from '../../../utils/html.js';
+import { rollDice } from '../../../integrations/rollDice/index.js';
+import { emptyRow } from '../widgets.js';
+import { abilityLevelLabel } from '../labels.js';
+
+const USE_LABEL = { ranged: 'Ranged (can be dodged)', melee: 'Melee (can be parried / dodged)', utility: 'Direct (no defense roll)' };
+const FX_LABEL = { damage: 'Damage', heal: 'Heal', fp: 'Restore stamina', buff: 'Buff (bonus)', debuff: 'Debuff (penalty)', stun: 'Stun', disarm: 'Disarm', none: 'No automatic effect' };
+const AIM_LABEL = { enemy: 'Enemy', ally: 'Ally (or self)', self: 'Self only', any: 'Anyone' };
+const STAT_LABEL = { attack: 'Attack rolls', defense: 'Defenses', skill: 'Skill rolls', resist: 'Resistance rolls', dr: 'DR', move: 'Move', all: 'All rolls' };
+
+const options = (list, selected, label = (x) => x) => list.map(x => `<option value="${esc(x)}" ${x === selected ? 'selected' : ''}>${esc(label(x))}</option>`).join('');
+
+/** A labelled cell; `off` dims and disables fields that don't apply to this ability's effect. */
+const cell = (label, inner, cls = '') => `<label class="gs-abcell ${cls}"><span>${label}</span>${inner}</label>`;
+
+/** Skill / attribute the ability is rolled against. Empty = a skill with the ability's own name. */
+const skillSelect = (data, a) => {
+    const skills = data.skills.map(s => String(s.name || '').trim()).filter(Boolean);
+    const known = !a.skill || skillAttrs().includes(a.skill) || skills.includes(a.skill);
+    return `
+                <select class="text_pole gs-f" data-list="abilities" data-field="skill" title="Rolled against this skill or attribute. Auto: a skill with the ability's own name (a spell is a skill), else the untrained level from your rules.">
+                  <option value="">(auto)</option>
+                  <optgroup label="Attributes">${options(skillAttrs(), a.skill)}</optgroup>
+                  ${skills.length ? `<optgroup label="Skills">${options(skills, a.skill)}</optgroup>` : ''}
+                  ${known ? '' : `<option selected>${esc(a.skill)}</option>`}
+                </select>`;
+};
+
+const rollAbilityBtn = (a) => (rollDice() && String(a.name || '').trim()
+    ? `<button class="menu_button gs-ability-roll" data-name="${esc(a.name)}" title="Roll ${esc(a.name)}"><i class="fa-solid fa-wand-sparkles"></i></button>` : '');
+
+const DICE_HINT = { damage: '2d / 1d+1', heal: '2d', fp: '1d' };
+
+const abilityRow = (data) => (a, i) => {
+    const raw = data.abilities[i] || {};
+    const hasDice = ['damage', 'heal', 'fp'].includes(a.fx);
+    const hasMod = ['buff', 'debuff'].includes(a.fx);
+    const hasTurns = hasMod || a.fx === 'stun';
+    const dis = (on) => (on ? '' : 'disabled');
+    return `
+              <div class="gs-ability" data-i="${i}">
+                <div class="gs-abline">
+                  ${cell('Name', `<input class="text_pole gs-f" data-list="abilities" data-field="name" value="${esc(a.name)}" placeholder="e.g. Spark">`, 'gs-abwide')}
+                  ${cell('Kind', `<input class="text_pole gs-f" data-list="abilities" data-field="kind" value="${esc(a.kind)}" list="gs-abkinds" placeholder="spell / psionic…">`)}
+                  ${cell('Rolled vs', skillSelect(data, a))}
+                  ${cell('Level', `<span class="gs-level"><span data-calc="ability-${i}">${abilityLevelLabel(a)}</span></span>`)}
+                  ${cell('Cost', `<input class="text_pole gs-f gs-pts" type="number" min="0" data-list="abilities" data-field="cost" value="${esc(a.cost || '')}" placeholder="0" title="Cost per use">`, 'gs-abnum')}
+                  ${cell('Pts', `<input class="text_pole gs-f gs-pts" type="number" data-list="abilities" data-field="pts" value="${esc(a.pts || '')}" placeholder="0" title="Character points (for powers bought as advantages; leave 0 for spells paid as skills)">`, 'gs-abnum')}
+                  <span class="gs-itembtns">${rollAbilityBtn(a)}<button class="menu_button gs-del" data-list="abilities" title="Remove">✕</button></span>
+                </div>
+                <div class="gs-abline">
+                  ${cell('Does', `<select class="text_pole gs-f" data-list="abilities" data-field="fx">${options(ABILITY_FX, a.fx, x => FX_LABEL[x])}</select>`)}
+                  ${cell('On', `<select class="text_pole gs-f" data-list="abilities" data-field="aim">${options(ABILITY_AIMS, raw.aim ? a.aim : '', x => AIM_LABEL[x])}${raw.aim ? '' : `<option value="" selected>auto (${AIM_LABEL[a.aim]})</option>`}</select>`)}
+                  ${cell('Delivery', `<select class="text_pole gs-f" data-list="abilities" data-field="use">${options(ABILITY_USES, a.use, x => USE_LABEL[x])}</select>`)}
+                  ${cell(a.use === 'melee' ? 'Reach' : 'Range', `<input class="text_pole gs-f gs-pts" type="number" min="0" data-list="abilities" data-field="range" value="${esc(a.range || '')}" placeholder="${a.use === 'melee' ? '1' : a.use === 'ranged' ? 'yd' : 'any'}" title="${a.use === 'melee' ? 'Reach (yd)' : 'Range (yd); empty = any distance for direct abilities'}">`, 'gs-abnum')}
+                  ${cell(a.fx === 'damage' ? 'Damage' : a.fx === 'heal' ? 'Heals' : a.fx === 'fp' ? 'Restores' : 'Dice', `<input class="text_pole gs-f" data-list="abilities" data-field="damage" value="${esc(a.damage)}" placeholder="${DICE_HINT[a.fx] || '—'}" ${dis(hasDice)}>`)}
+                  ${cell('Stat', `<select class="text_pole gs-f" data-list="abilities" data-field="stat" ${dis(hasMod)}>${options(ABILITY_STATS, a.stat, x => STAT_LABEL[x])}</select>`)}
+                  ${cell('Mod', `<input class="text_pole gs-f gs-pts" type="number" data-list="abilities" data-field="mod" value="${esc(hasMod ? a.mod : '')}" placeholder="${a.fx === 'debuff' ? '-2' : '+2'}" ${dis(hasMod)}>`, 'gs-abnum')}
+                  ${cell('Turns', `<input class="text_pole gs-f gs-pts" type="number" min="1" data-list="abilities" data-field="duration" value="${esc(hasTurns ? a.duration : '')}" placeholder="${a.fx === 'stun' ? '1' : '3'}" ${dis(hasTurns)}>`, 'gs-abnum')}
+                  ${cell('Resisted by', `<select class="text_pole gs-f" data-list="abilities" data-field="resist">${options(resistAttrs(), a.resist, x => x || '— (not resisted)')}</select>`)}
+                </div>
+                <div class="gs-abline">
+                  ${cell('Notes', `<input class="text_pole gs-f" data-list="abilities" data-field="effect" value="${esc(a.effect)}" placeholder="What it does in the story, limits, special cases… (sent to the AI)">`, 'gs-abfull')}
+                </div>
+              </div>`;
+};
+
+export const abilities = (data, c) => `
+          <section>
+            <h5>Abilities <span class="gs-dim">spells, psionics, powers… · <span data-calc="abilitypts">${c.points.abilities}</span> pts</span></h5>
+            ${c.abilities.map(abilityRow(data)).join('') || emptyRow('None. Abilities are spells, psionics, powers or natural attacks that are not inventory items. In Combat Mode they can damage, heal, restore stamina, buff, debuff, stun or disarm, or just be rolled and narrated.')}
+            <datalist id="gs-abkinds">${ABILITY_KINDS.map(x => `<option>${x}</option>`).join('')}</datalist>
+            <button class="menu_button gs-add" data-list="abilities">+ Ability</button>
+          </section>`;
