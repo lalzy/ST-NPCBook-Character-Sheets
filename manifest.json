@@ -1,12 +1,12 @@
 {
-    "display_name": "NPC Book Character Sheet (for use with GURPS®)",
+    "display_name": "NPC Book Character Sheet",
     "loading_order": 110,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
-    "author": "NPC Book",
-    "version": "2.3.3",
+    "author": "S.K.N The Lisper",
+    "version": "1.0.0",
     "homePage": "",
     "auto_update": false
 }
