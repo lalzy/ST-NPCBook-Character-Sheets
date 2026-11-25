@@ -1,42 +1,32 @@
 // Build a sheet from the "sheet" object the LLM writes for new NPCs.
-// The LLM is asked for numbers and free-text names only (no point costs, no book data).
+// The LLM is asked for numbers and free-text names only (no book data).
 import { ABILITY_USES, ABILITY_FX, ABILITY_AIMS, ABILITY_STATS, resistAttrs } from './rules.js';
-import { attrKeys, defaultAttr, skillAttrs, difficulties, diffBase, skillsUsePoints } from '../rules/ruleset.js';
+import { attrKeys, defaultAttr, skillAttrs } from '../rules/ruleset.js';
 import { defaultSheet } from './sheet.js';
-import { compute } from './compute.js';
-import { pointsForRelative } from './skills.js';
 import { num } from '../utils/number.js';
 
 function addSkills(sh, g) {
-    const attrVal = compute(sh).attrVal;
     const attrs = skillAttrs();
-    const diffs = difficulties();
     const skills = Array.isArray(g.skills) ? g.skills : Object.entries(g.skills || {}).map(([n, lvl]) => [n, null, lvl]);
     for (const row of skills) {
-        // [name, attr, level], or [name, level] without attributes; the older shape [name, attr, diff, level] is still read
-        const r = Array.isArray(row) ? (row.length >= 4 ? row : row.length === 2 ? [row[0], null, null, row[1]] : [row[0], row[1], null, row[2]]) : [row?.name, row?.attr, row?.diff, row?.level ?? row?.SL];
-        const [name, attr0, diff0, lvl] = r;
+        // [name, attr, level] or [name, level]; with 4 items the level is the last one
+        const r = Array.isArray(row) ? (row.length === 2 ? [row[0], null, row[1]] : [row[0], row[1], row[row.length - 1]]) : [row?.name, row?.attr, row?.level];
+        const [name, attr0, lvl] = r;
         if (!name) continue;
         const attr = attrs.includes(String(attr0)) ? String(attr0) : defaultAttr();
-        const diff = diffs.includes(String(diff0)) ? String(diff0) : (diffs[0] ?? '');
         const level = Number(lvl);
-        const base = diffBase(diff);
-        const rel = Number.isFinite(level) ? level - (attr ? num(attrVal[attr]) : 0) : base;
-        sh.skills.push({ name: String(name), attr, diff, pts: pointsForRelative(diff, skillsUsePoints() ? Math.max(rel, base) : rel) });
+        sh.skills.push({ name: String(name), attr, level: Number.isFinite(level) ? level : '' });
     }
 }
 
 function addTraits(sh, g) {
     const traits = Array.isArray(g.traits) ? g.traits : Object.entries(g.traits || {});
     for (const row of traits) {
-        let name; let pts = 0; let effect = '';
+        let name; let effect = '';
         if (typeof row === 'string') name = row;
-        else if (Array.isArray(row)) {
-            name = row[0];
-            // [name, effect] (current prompt) or [name, pts, effect] (older sheets)
-            if (typeof row[1] === 'number') { pts = row[1]; effect = row[2] ?? ''; } else effect = row[1] ?? '';
-        } else { name = row?.name; pts = num(row?.pts); effect = row?.effect ?? ''; }
-        if (name) sh.traits.push({ name: String(name), pts: num(pts), effect: effect ? String(effect) : '' });
+        else if (Array.isArray(row)) { name = row[0]; effect = row.slice(1).find(x => typeof x === 'string') ?? ''; }
+        else { name = row?.name; effect = row?.effect ?? ''; }
+        if (name) sh.traits.push({ name: String(name), effect: effect ? String(effect) : '' });
     }
 }
 
@@ -72,19 +62,18 @@ function addAbilities(sh, g) {
             fx, aim: ABILITY_AIMS.includes(aim) ? aim : '',
             skill: String(row.skill ?? ''), damage: String(row.damage ?? row.amount ?? ''),
             stat: ABILITY_STATS.includes(stat) ? stat : '', mod: num(row.mod), duration: digits(row.turns ?? row.duration), resist,
-            range: digits(row.range ?? row.reach), cost: digits(row.fp ?? row.cost), pts: num(row.pts), effect: String(row.effect ?? ''),
+            range: digits(row.range ?? row.reach), cost: digits(row.fp ?? row.cost), effect: String(row.effect ?? ''),
         });
     }
 }
 
 /**
- * entry.sheet (older chats: entry.gurps) = { [attribute key]: value…, skills: [[name, attr, level], ...] | {name: level},
+ * entry.sheet (older chats used the extension id as the key) = { [attribute key]: value…, skills: [[name, attr, level], ...] | {name: level},
  *     traits: [[name, effect], ...] | [name], equipment: [name | {name, category, damage, armor, weight, value}],
  *     abilities: [{name, kind, use, fx, on, skill, damage, stat, mod, turns, resist, range, fp, effect}] }
  */
-export function sheetFromLLM(g, budget = 100) {
+export function sheetFromLLM(g) {
     const sh = defaultSheet();
-    sh.budget = budget;
     sh.enabled = true; // the LLM made it on request
     if (!g || typeof g !== 'object') return sh;
     for (const k of attrKeys()) if (Number.isFinite(Number(g[k]))) sh.attrs[k] = Math.max(1, Math.min(99, Math.round(Number(g[k]))));

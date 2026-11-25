@@ -33,7 +33,7 @@ function formulaProblems(r) {
     const out = [];
     const check = (where, f) => { const e = formulaError(f); if (e) out.push(`${where}: ${e}`); };
     r.secondary.forEach(x => check(`secondary ${x.key}`, x.base));
-    for (const k of ['basicLift', 'dodge', 'parry', 'block', 'unskilled']) check(k, r[k]);
+    for (const k of ['basicLift', 'dodge', 'parry', 'block', 'armorClass', 'unskilled']) check(k, r[k]);
     return out;
 }
 
@@ -85,7 +85,6 @@ export function mountSettings() {
     bind(html, '#gs_enabled', 'enabled', 'checkbox');
     bind(html, '#gs_send', 'sendXml', 'checkbox');
     bind(html, '#gs_gen', 'generateForNew', 'checkbox');
-    bind(html, '#gs_budget', 'defaultBudget', 'number');
     html.find('#gs_gen').on('change', () => { window.NPCBook?.refreshScene?.(); renderChatState(); });
     html.find('#gs_chatreset').on('click', () => { setChatChoice(undefined); renderChatState(); });
     bindRules(html);

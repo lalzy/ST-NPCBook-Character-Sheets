@@ -7,15 +7,12 @@ export function defaultSheet() {
     return {
         version: 1,
         enabled: false, // per character: only enabled sheets are sent / used
-        budget: 100,
-        tl: '',
-        sm: 0,
         attrs: Object.fromEntries(attrKeys().map(k => [k, base])),
         sec: {},        // { [secondary key]: steps above / below its base }
-        traits: [],     // { name, pts, effect }  (pts > 0 positive trait, < 0 negative trait)
-        skills: [],     // { name, attr, diff, pts }
+        traits: [],     // { name, effect }
+        skills: [],     // { name, attr, level }
         equipment: [],  // { name, qty, weight (each), value (each), category, stat, effect }
-        abilities: [],  // { name, kind, use: ranged|melee|utility, skill, damage, range, cost, pts, effect }
+        abilities: [],  // { name, kind, use: ranged|melee|utility, skill, damage, range, cost, effect }
         reactions: [],  // { name, groups: [{ who, mod }] }
         notes: '',
     };

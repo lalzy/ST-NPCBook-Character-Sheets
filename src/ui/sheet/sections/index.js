@@ -8,7 +8,7 @@ import { skills } from './skills.js';
 import { abilities } from './abilities.js';
 import { reactions } from './reactions.js';
 import { inventory } from './inventory.js';
-import { summary, notes } from './footer.js';
+import { notes } from './footer.js';
 
 export { disabledSheet };
 
@@ -28,6 +28,5 @@ export const sheetHtml = (data, c) => `
           ${abilities(data, c)}
           ${reactions(data)}
           ${inventory(data, c)}
-          ${summary(c)}
           ${notes(data)}
         </div>`;

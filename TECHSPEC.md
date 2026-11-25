@@ -12,7 +12,7 @@ The extension ships **no rules data**. Every cost, table, multiplier and formula
 index.js                      entry point
 src/
   core/
-    constants.js              MODULE ('npc_book_gurps'), EXT_ID ('gurps'), TITLE, DEFAULTS, CATEGORIES
+    constants.js              MODULE (settings key), EXT_ID (NPC Book data id), TITLE, DEFAULTS, CATEGORIES
     context.js                ctx(), settings(), applyRules()
   rules/
     ruleset.js                EMPTY_RULES, BLANK_TEMPLATE, normalizeRules, setRules / rules(), helpers
@@ -48,11 +48,11 @@ src/
       events.js               delegated DOM handlers
 ```
 
-Dependency direction: `ui` / `integrations` → `engine` → `rules` → `utils`. `engine` and `rules` never touch the DOM or SillyTavern. The storage keys `npc_book_gurps` and `gurps` are kept from earlier versions so saved settings and sheets still load.
+Dependency direction: `ui` / `integrations` → `engine` → `rules` → `utils`. `engine` and `rules` never touch the DOM or SillyTavern. The storage keys (`MODULE`, `EXT_ID`) never change, so saved settings and sheets still load.
 
 ## Settings
 
-Stored in `extensionSettings.npc_book_gurps`, back-filled from `DEFAULTS`:
+Stored in `extensionSettings[MODULE]`, back-filled from `DEFAULTS`:
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -62,7 +62,7 @@ Stored in `extensionSettings.npc_book_gurps`, back-filled from `DEFAULTS`:
 | `defaultBudget` | `100` | Budget for new sheets and for `sheetFromLLM`. |
 | `rules` | `{}` | The user's rules config. See RULES.md for every key. `applyRules()` loads it into the engine at start-up and on save. |
 
-Per-chat override: `chatMetadata.npc_book_gurps.generate` (`true` / `false`; absent = follow `generateForNew`). See `src/chat/generation.js`.
+Per-chat override: `chatMetadata[MODULE].generate` (`true` / `false`; absent = follow `generateForNew`). See `src/chat/generation.js`.
 
 ## Rules config (`src/rules`)
 
@@ -71,9 +71,10 @@ Per-chat override: `chatMetadata.npc_book_gurps.generate` (`true` / `false`; abs
 - No `attributes` → the sheet has no attributes; skills are just their number. No `attrCost` → attributes cost 0. No `attrBase` → sheets start at an engine fallback of 10.
 - No `secondary` → no secondary stats. No `roles.health` / `stamina` / `speed` → hp / fp / speed passed to Roll Dice are `null`.
 - No `basicLift` or `encumbrance` → no encumbrance; Move = the `roles.move` secondary if defined.
-- No `damageTable` or `roles.damage` → no thrust / swing; `thr` / `sw` damage stats don't parse.
+- No `damageTable` or `roles.damage` → no thrust / swing (hidden on the sheet); `thr` / `sw` damage stats don't parse.
 - No `skillCosts` → a skill's number is its level above the attribute, and skills add no points.
-- No `dodge`, `parry`, `block` → those defenses are not offered.
+- No `dodge`, `parry`, `block` → those defenses are not offered (Dodge is hidden on the sheet).
+- No `armorClass` → no armor class (`ac` is null; Combat Mode works one out when the game system needs it).
 - No `unskilled` → untrained attacks use the `roles.defaultAttr` attribute (else the first attribute).
 - No `woundMultipliers` → multiplier 1.
 
@@ -81,7 +82,7 @@ Per-chat override: `chatMetadata.npc_book_gurps.generate` (`true` / `false`; abs
 
 ## Sheet data
 
-Stored by NPC Book under extension id `gurps` (card: `template.ext.gurps`; persona: `getPersonaData('gurps')`). `normalizeSheet()` fills missing structure; a sheet saved without `enabled` is switched on only if it is not blank.
+Stored by NPC Book under the extension id `EXT_ID` (card: `template.ext[EXT_ID]`; persona: `getPersonaData(EXT_ID)`). `normalizeSheet()` fills missing structure; a sheet saved without `enabled` is switched on only if it is not blank.
 
 ```js
 {
@@ -116,7 +117,8 @@ Items count as weapons when `category` matches `weapon|shield|ranged|melee`.
 - Dodge from `compute()` plus `defenseTraits` bonuses, then every skill with a level under "Skills & spells".
 - Total armor: sum of `DR n` / `armor n` in `stat` over items whose category matches `armor`.
 - Abilities (group `Abilities`): every ability with a level gives a roll entry `{ name, target, ability: kind, attack: true, use, fx, aim, resist, stat, mod, duration, amount, ranged, range, reach, cost, effect }`; damage abilities also give a damage entry flagged `ability`.
-- The Roll Dice character entry also carries `hp`, `fp`, `move`, `speed` and `attrs` (attributes, secondary stats and lift, for resistance rolls).
+- The Roll Dice character entry also carries `hp`, `fp`, `move`, `speed`, `ac` (from the `armorClass` formula, else null) and `attrs` (attributes, secondary stats and lift, for resistance rolls).
+- Dice: `Nd` (six-sided), `NdS` (any die size, e.g. `1d8+2`), `sw` / `thr` from the damage table. Damage entries carry `n`, `sides`, `add`.
 
 ## LLM output (`sheetFromLLM`)
 
@@ -126,7 +128,7 @@ Items count as weapons when `category` matches `weapon|shield|ranged|melee`.
 "sheet": {"<attribute key>": n, …, "skills": [["Skill name", "<default attribute>", 12]], "traits": [["Trait name", "short note"]], "equipment": [{"name": "Item", "category": "weapon", "damage": "1d+1", "weight": 2}], "abilities": [{"name": "Ability", "kind": "spell", "use": "ranged", "fx": "damage", "on": "enemy", "skill": "Ability", "damage": "2d", "range": 20, "fp": 2}]}
 ```
 
-Accepted shapes (older chats wrote the key `gurps`; it is still read):
+Accepted shapes (older chats wrote the key `EXT_ID`; it is still read):
 
 - Attributes: numbers, clamped to 1–99 and rounded.
 - `skills`: `[name, attr, level]`, `[name, level]`, `[name, attr, diff, level]`, `{ name, attr, diff, level | SL }`, or `{ "Name": level }`. Unknown attr → the default attribute. Points from `pointsForRelative()` (or the relative level without a cost table).
@@ -151,12 +153,12 @@ Registered with `registerExtension` (on `window.NPCBook` if present, else on the
 | `personaSheet` | "Character Sheet" tab → `renderSheet` with key `user`. |
 | `sceneXml` | `toXml()` when enabled, `sendXml` on, sheet enabled and not blank. |
 | `instructions` | Adds `newNpcRule()` when enabled, `autoCreate` and generation is on for the chat. |
-| `fromTracker` | `sheetFromLLM(entry.sheet ?? entry.gurps, defaultBudget)` when enabled and generation is on for the chat. |
+| `fromTracker` | `sheetFromLLM(entry.sheet ?? entry[EXT_ID], defaultBudget)` when enabled and generation is on for the chat. |
 | `sceneButton` | `fa-users-viewfinder`; `active` = generation on for this chat; click toggles the chat's override. |
 
 ## Roll Dice hooks (`integrations/rollDice`)
 
-- Registers source `{ id: 'gurps', label: 'Character sheet', getCharacters }` when `window.RollDice` exists and again on every `rolldice:ready` event.
+- Registers source `{ id: EXT_ID, label: 'Character sheet', getCharacters }` when `window.RollDice` exists and again on every `rolldice:ready` event.
 - `getCharacters()` returns the persona (key `user`) and each scene NPC with an enabled sheet: `{ key, name, prefix, rollables, combat, dr, hp, fp, move, speed, attrs }`.
 - `rollables`: attributes, secondary stats that have a `roll` name, Dodge (if defined), each skill and ability with a level.
-- Sheet buttons call `RollDice.open({ preset: 'skill' | 'combat', skill, target, character, rollable })`. Dice, comparison and critical totals come from Roll Dice's own settings.
+- Sheet buttons call `RollDice.open({ preset: 'skill' | 'combat', skill, target, character, rollable })`. Dice, comparison and criticals come from the chat's game system in Roll Dice (1.2+): the sheet value is a target to roll under, or a bonus against a target number.

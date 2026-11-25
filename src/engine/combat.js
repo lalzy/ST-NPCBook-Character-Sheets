@@ -28,7 +28,7 @@ function weaponActions(sh, c, skillLevel, defBonus) {
         const isShield = /shield/i.test(String(w.category || ''));
         const dmg = weaponDamage(w.stat, c.thrust, c.swing);
         if (!isShield || dmg) actions.push({ group: 'Attack', kind: 'roll', name: `${w.name} Attack`, target: level, note: usedSkill });
-        if (dmg) actions.push({ group: 'Damage', kind: 'damage', name: `${w.name} Damage`, n: dmg.n, add: dmg.add, type: dmg.type, mult: woundMult(dmg.type), note: dmg.text });
+        if (dmg) actions.push({ group: 'Damage', kind: 'damage', name: `${w.name} Damage`, n: dmg.n, sides: dmg.sides, add: dmg.add, type: dmg.type, mult: woundMult(dmg.type), note: dmg.text });
         if (isShield) {
             const t = defense(R.block, level, defBonus);
             if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: `Block (${w.name})`, target: t });
@@ -56,7 +56,7 @@ function unarmedActions(c, skillLevel, defBonus) {
         const dmg = weaponDamage(atk.damage, c.thrust, c.swing);
         if (dmg) {
             const bonus = /^(thr|sw)/i.test(atk.damage) && thr ? perDie * thr.n : 0;
-            actions.push({ group: 'Damage', kind: 'damage', name: `${atk.name} Damage`, n: dmg.n, add: dmg.add + bonus, type: dmg.type, mult: woundMult(dmg.type) });
+            actions.push({ group: 'Damage', kind: 'damage', name: `${atk.name} Damage`, n: dmg.n, sides: dmg.sides, add: dmg.add + bonus, type: dmg.type, mult: woundMult(dmg.type) });
         }
     }
     if (ua) {
@@ -83,13 +83,13 @@ function abilityActions(c) {
             attack: true, // usable in combat (older readers skip attack: false)
             use: a.use, fx: a.fx, aim: a.aim, resist: a.resist,
             stat: a.stat, mod: a.mod, duration: a.duration,
-            amount: a.amount ? { n: a.amount.n, add: a.amount.add } : null,
+            amount: a.amount ? { n: a.amount.n, sides: a.amount.sides, add: a.amount.add } : null,
             ranged: a.use !== 'melee',
             range: a.use === 'ranged' ? (a.range > 0 ? a.range : null) : a.use === 'utility' ? (a.range > 0 ? a.range : 1000) : null,
             reach: a.use === 'melee' ? (a.range > 0 ? a.range : 1) : null,
             cost: a.cost, effect: String(a.effect || ''),
         });
-        if (a.dmg) actions.push({ group: 'Damage', kind: 'damage', name: `${a.name} Damage`, n: a.dmg.n, add: a.dmg.add, type: a.dmg.type, mult: woundMult(a.dmg.type), note: a.dmg.text, ability: kind });
+        if (a.dmg) actions.push({ group: 'Damage', kind: 'damage', name: `${a.name} Damage`, n: a.dmg.n, sides: a.dmg.sides, add: a.dmg.add, type: a.dmg.type, mult: woundMult(a.dmg.type), note: a.dmg.text, ability: kind });
     }
     return actions;
 }

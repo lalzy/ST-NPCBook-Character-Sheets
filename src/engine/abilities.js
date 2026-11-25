@@ -66,12 +66,12 @@ export function computeAbilities(abilities, skills, attrVal, thrust, swing) {
         const { level, via } = abilityLevel(ab, skills, attrVal);
         const dice = weaponDamage(ab.damage, thrust, swing);
         const dmg = fx === 'damage' ? dice : null;
-        const amount = ['heal', 'fp'].includes(fx) && dice ? { n: dice.n, add: dice.add, text: dice.text.replace(/ \S+$/, '') } : null;
+        const amount = ['heal', 'fp'].includes(fx) && dice ? { n: dice.n, sides: dice.sides, add: dice.add, text: dice.text.replace(/ \S+$/, '') } : null;
         const stat = ABILITY_STATS.includes(ab.stat) ? ab.stat : 'all';
         const resist = resistAttrs().includes(ab.resist) ? ab.resist : '';
         const duration = Math.max(1, Math.round(num(ab.duration, 0)) || (fx === 'stun' ? 1 : 3));
         const mod = Math.round(num(ab.mod, 0)) || (fx === 'debuff' ? -2 : fx === 'buff' ? 2 : 0);
-        const out = { ...ab, use, fx, aim: abilityAim(ab), level, via, dmg, amount, stat, mod, duration, resist, range: num(ab.range), cost: Math.max(0, num(ab.cost)), pts: num(ab.pts) };
+        const out = { ...ab, use, fx, aim: abilityAim(ab), level, via, dmg, amount, stat, mod, duration, resist, range: num(ab.range), cost: Math.max(0, num(ab.cost)) };
         out.fxText = fxText(out);
         return out;
     });

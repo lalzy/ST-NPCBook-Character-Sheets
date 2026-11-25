@@ -16,11 +16,11 @@ const attackBtn = (e) => (rollDice() && /weapon|shield|ranged|melee/i.test(Strin
 const itemRow = (data) => (e, i) => `
               <div class="gs-row gs-item" data-i="${i}">
                 <input class="text_pole gs-f" data-list="equipment" data-field="name" value="${esc(e.name)}" placeholder="Item">
-                <input class="text_pole gs-f gs-pts" type="number" min="0" data-list="equipment" data-field="qty" value="${esc(e.qty ?? 1)}">
+                <input class="text_pole gs-f gs-num" type="number" min="0" data-list="equipment" data-field="qty" value="${esc(e.qty ?? 1)}">
                 <input class="text_pole gs-f" data-list="equipment" data-field="category" value="${esc(e.category)}" list="gs-cats">
                 <input class="text_pole gs-f" data-list="equipment" data-field="stat" value="${esc(e.stat)}" placeholder="1d+1 / DR 2">${skillSelect(data, e)}
-                <input class="text_pole gs-f gs-pts" type="number" min="0" step="0.1" data-list="equipment" data-field="weight" value="${esc(e.weight)}">
-                <input class="text_pole gs-f gs-pts" type="number" min="0" data-list="equipment" data-field="value" value="${esc(e.value)}">
+                <input class="text_pole gs-f gs-num" type="number" min="0" step="0.1" data-list="equipment" data-field="weight" value="${esc(e.weight)}">
+                <input class="text_pole gs-f gs-num" type="number" min="0" data-list="equipment" data-field="value" value="${esc(e.value)}">
                 <input class="text_pole gs-f" data-list="equipment" data-field="effect" value="${esc(e.effect)}">
                 <span class="gs-itembtns">${attackBtn(e)}<button class="menu_button gs-del" data-list="equipment" title="Remove">✕</button></span>
               </div>`;

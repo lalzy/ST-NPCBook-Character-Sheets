@@ -42,16 +42,16 @@ function transformInstructions(text, { autoCreate } = {}) {
 
 function fromTracker(entry) {
     const s = settings();
-    const g = entry?.sheet ?? entry?.gurps; // "gurps" = older chats
+    const g = entry?.sheet ?? entry?.[EXT_ID]; // older chats used the extension id as the key
     if (!s.enabled || !generateInChat() || !g) return null;
-    return sheetFromLLM(g, s.defaultBudget);
+    return sheetFromLLM(g);
 }
 
 const definition = () => ({
     id: EXT_ID,
     label: 'Sheet',
     sheetLabel: 'Character Sheet',
-    defaultData: () => ({ ...defaultSheet(), budget: settings().defaultBudget }),
+    defaultData: () => defaultSheet(),
     cardTab: { label: 'Sheet', icon: 'fa-users-viewfinder', render: (host, { data, template }) => renderSheet(host, data, { prefix: template?.name ? `${template.name}'s` : '', key: template?.id }) },
     personaSheet: { label: 'Character Sheet', icon: 'fa-users-viewfinder', render: (host, { data }) => renderSheet(host, data, { prefix: '', key: 'user' }) },
     sceneXml,

@@ -5,7 +5,7 @@ export const MODULE = 'npc_book_gurps';
 export const EXT_ID = 'gurps';
 export const TITLE = 'NPC Book Character Sheet';
 
-export const DEFAULTS = { enabled: true, sendXml: true, generateForNew: true, defaultBudget: 100, rules: {} };
+export const DEFAULTS = { enabled: true, sendXml: true, generateForNew: true, rules: {} };
 
 /** Suggested inventory categories (datalist). */
 export const CATEGORIES = ['weapon', 'armor', 'shield', 'clothing', 'tool', 'supplies', 'valuable', 'consumable', 'misc'];

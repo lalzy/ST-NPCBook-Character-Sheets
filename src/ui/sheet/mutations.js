@@ -1,5 +1,5 @@
 // Edits to the sheet draft (pure data, no DOM).
-import { secondaryList, attrBase, defaultAttr, difficulties, compute } from '../../engine/index.js';
+import { secondaryList, attrBase, defaultAttr, compute } from '../../engine/index.js';
 import { num } from '../../utils/number.js';
 
 /** Set a secondary stat from the value typed in (stored as steps from its base). */
@@ -17,17 +17,18 @@ export function stepValue(data, cls, key, dir) {
     return undefined;
 }
 
-const NUMERIC_FIELDS = ['pts', 'qty', 'weight', 'value', 'range', 'cost', 'mod', 'duration'];
+const NUMERIC_FIELDS = ['qty', 'weight', 'value', 'range', 'cost', 'mod', 'duration'];
 
 export function setListField(data, list, i, field, raw) {
+    if (list === 'skills' && field === 'level') { data[list][i][field] = String(raw).trim() === '' ? '' : num(raw); return; }
     data[list][i][field] = NUMERIC_FIELDS.includes(field) ? num(raw) : raw;
 }
 
 const NEW_ROW = {
-    traits: (sign) => ({ name: '', pts: sign > 0 ? 1 : -1, effect: '' }),
-    skills: () => ({ name: '', attr: defaultAttr(), diff: difficulties()[0] ?? '', pts: 0 }),
+    traits: () => ({ name: '', effect: '' }),
+    skills: () => ({ name: '', attr: defaultAttr(), level: '' }),
     equipment: () => ({ name: '', qty: 1, weight: 0, value: 0, category: '', stat: '', effect: '' }),
-    abilities: () => ({ name: '', kind: '', use: 'ranged', fx: 'damage', aim: '', skill: '', damage: '', stat: '', mod: 0, duration: 0, resist: '', range: 0, cost: 0, pts: 0, effect: '' }),
+    abilities: () => ({ name: '', kind: '', use: 'ranged', fx: 'damage', aim: '', skill: '', damage: '', stat: '', mod: 0, duration: 0, resist: '', range: 0, cost: 0, effect: '' }),
     reactions: () => ({ name: '', groups: [{ who: 'everyone', mod: 1 }] }),
 };
 

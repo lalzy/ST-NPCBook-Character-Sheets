@@ -9,7 +9,6 @@ export function settings() {
     const es = ctx().extensionSettings;
     if (!es[MODULE]) es[MODULE] = { ...DEFAULTS };
     for (const [k, v] of Object.entries(DEFAULTS)) if (es[MODULE][k] === undefined) es[MODULE][k] = v;
-    delete es[MODULE].gurpsRolls; // removed: crit rules now live in Roll Dice's own settings
     return es[MODULE];
 }
 

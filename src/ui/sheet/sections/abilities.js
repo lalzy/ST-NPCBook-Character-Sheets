@@ -4,7 +4,7 @@ import { rollDice } from '../../../integrations/rollDice/index.js';
 import { emptyRow } from '../widgets.js';
 import { abilityLevelLabel } from '../labels.js';
 
-const USE_LABEL = { ranged: 'Ranged (can be dodged)', melee: 'Melee (can be parried / dodged)', utility: 'Direct (no defense roll)' };
+const USE_LABEL = { ranged: 'Ranged (the target can defend)', melee: 'Melee (the target can defend)', utility: 'Direct (no defense)' };
 const FX_LABEL = { damage: 'Damage', heal: 'Heal', fp: 'Restore stamina', buff: 'Buff (bonus)', debuff: 'Debuff (penalty)', stun: 'Stun', disarm: 'Disarm', none: 'No automatic effect' };
 const AIM_LABEL = { enemy: 'Enemy', ally: 'Ally (or self)', self: 'Self only', any: 'Anyone' };
 const STAT_LABEL = { attack: 'Attack rolls', defense: 'Defenses', skill: 'Skill rolls', resist: 'Resistance rolls', dr: 'DR', move: 'Move', all: 'All rolls' };
@@ -45,19 +45,18 @@ const abilityRow = (data) => (a, i) => {
                   ${cell('Kind', `<input class="text_pole gs-f" data-list="abilities" data-field="kind" value="${esc(a.kind)}" list="gs-abkinds" placeholder="spell / psionic…">`)}
                   ${cell('Rolled vs', skillSelect(data, a))}
                   ${cell('Level', `<span class="gs-level"><span data-calc="ability-${i}">${abilityLevelLabel(a)}</span></span>`)}
-                  ${cell('Cost', `<input class="text_pole gs-f gs-pts" type="number" min="0" data-list="abilities" data-field="cost" value="${esc(a.cost || '')}" placeholder="0" title="Cost per use">`, 'gs-abnum')}
-                  ${cell('Pts', `<input class="text_pole gs-f gs-pts" type="number" data-list="abilities" data-field="pts" value="${esc(a.pts || '')}" placeholder="0" title="Character points (for powers bought as advantages; leave 0 for spells paid as skills)">`, 'gs-abnum')}
+                  ${cell('Cost', `<input class="text_pole gs-f gs-num" type="number" min="0" data-list="abilities" data-field="cost" value="${esc(a.cost || '')}" placeholder="0" title="Cost per use">`, 'gs-abnum')}
                   <span class="gs-itembtns">${rollAbilityBtn(a)}<button class="menu_button gs-del" data-list="abilities" title="Remove">✕</button></span>
                 </div>
                 <div class="gs-abline">
                   ${cell('Does', `<select class="text_pole gs-f" data-list="abilities" data-field="fx">${options(ABILITY_FX, a.fx, x => FX_LABEL[x])}</select>`)}
                   ${cell('On', `<select class="text_pole gs-f" data-list="abilities" data-field="aim">${options(ABILITY_AIMS, raw.aim ? a.aim : '', x => AIM_LABEL[x])}${raw.aim ? '' : `<option value="" selected>auto (${AIM_LABEL[a.aim]})</option>`}</select>`)}
                   ${cell('Delivery', `<select class="text_pole gs-f" data-list="abilities" data-field="use">${options(ABILITY_USES, a.use, x => USE_LABEL[x])}</select>`)}
-                  ${cell(a.use === 'melee' ? 'Reach' : 'Range', `<input class="text_pole gs-f gs-pts" type="number" min="0" data-list="abilities" data-field="range" value="${esc(a.range || '')}" placeholder="${a.use === 'melee' ? '1' : a.use === 'ranged' ? 'yd' : 'any'}" title="${a.use === 'melee' ? 'Reach (yd)' : 'Range (yd); empty = any distance for direct abilities'}">`, 'gs-abnum')}
+                  ${cell(a.use === 'melee' ? 'Reach' : 'Range', `<input class="text_pole gs-f gs-num" type="number" min="0" data-list="abilities" data-field="range" value="${esc(a.range || '')}" placeholder="${a.use === 'melee' ? '1' : a.use === 'ranged' ? 'yd' : 'any'}" title="${a.use === 'melee' ? 'Reach (yd)' : 'Range (yd); empty = any distance for direct abilities'}">`, 'gs-abnum')}
                   ${cell(a.fx === 'damage' ? 'Damage' : a.fx === 'heal' ? 'Heals' : a.fx === 'fp' ? 'Restores' : 'Dice', `<input class="text_pole gs-f" data-list="abilities" data-field="damage" value="${esc(a.damage)}" placeholder="${DICE_HINT[a.fx] || '—'}" ${dis(hasDice)}>`)}
                   ${cell('Stat', `<select class="text_pole gs-f" data-list="abilities" data-field="stat" ${dis(hasMod)}>${options(ABILITY_STATS, a.stat, x => STAT_LABEL[x])}</select>`)}
-                  ${cell('Mod', `<input class="text_pole gs-f gs-pts" type="number" data-list="abilities" data-field="mod" value="${esc(hasMod ? a.mod : '')}" placeholder="${a.fx === 'debuff' ? '-2' : '+2'}" ${dis(hasMod)}>`, 'gs-abnum')}
-                  ${cell('Turns', `<input class="text_pole gs-f gs-pts" type="number" min="1" data-list="abilities" data-field="duration" value="${esc(hasTurns ? a.duration : '')}" placeholder="${a.fx === 'stun' ? '1' : '3'}" ${dis(hasTurns)}>`, 'gs-abnum')}
+                  ${cell('Mod', `<input class="text_pole gs-f gs-num" type="number" data-list="abilities" data-field="mod" value="${esc(hasMod ? a.mod : '')}" placeholder="${a.fx === 'debuff' ? '-2' : '+2'}" ${dis(hasMod)}>`, 'gs-abnum')}
+                  ${cell('Turns', `<input class="text_pole gs-f gs-num" type="number" min="1" data-list="abilities" data-field="duration" value="${esc(hasTurns ? a.duration : '')}" placeholder="${a.fx === 'stun' ? '1' : '3'}" ${dis(hasTurns)}>`, 'gs-abnum')}
                   ${cell('Resisted by', `<select class="text_pole gs-f" data-list="abilities" data-field="resist">${options(resistAttrs(), a.resist, x => x || '— (not resisted)')}</select>`)}
                 </div>
                 <div class="gs-abline">
@@ -68,7 +67,7 @@ const abilityRow = (data) => (a, i) => {
 
 export const abilities = (data, c) => `
           <section>
-            <h5>Abilities <span class="gs-dim">spells, psionics, powers… · <span data-calc="abilitypts">${c.points.abilities}</span> pts</span></h5>
+            <h5>Abilities <span class="gs-dim">spells, psionics, powers…</span></h5>
             ${c.abilities.map(abilityRow(data)).join('') || emptyRow('None. Abilities are spells, psionics, powers or natural attacks that are not inventory items. In Combat Mode they can damage, heal, restore stamina, buff, debuff, stun or disarm, or just be rolled and narrated.')}
             <datalist id="gs-abkinds">${ABILITY_KINDS.map(x => `<option>${x}</option>`).join('')}</datalist>
             <button class="menu_button gs-add" data-list="abilities">+ Ability</button>

@@ -102,6 +102,12 @@ With no `skillCosts`, the number you type is the level above the attribute, and 
 ```
 → Dodge is 7. A weapon skill of 13 gives Parry 8.
 
+**`armorClass`** is a formula for a fixed defense number that attacks must reach, for games that use one instead of defense rolls. It can use attributes, secondary stats, `lift` and `armor` (total armor from armor items).
+```json
+"armorClass": "10 + floor((Agi - 10) / 2) + armor"
+```
+→ Agi 11 and armor 2 give AC 12. The sheet shows it next to the other derived values, and Combat Mode uses it when the chat's game system attacks against armor class.
+
 **`defenseTraits`** gives a bonus to every defense to traits whose names start with `name`.
 ```json
 "defenseTraits": [ { "name": "Alert", "bonus": 1 } ]

@@ -81,8 +81,8 @@
 .gs-item > * { min-width: 0; }
 
 .gs-chatrow { display: flex; align-items: center; gap: 8px; margin: 4px 0 6px; }
-.npcb-gurps-settings .gs-rules { font-family: var(--monoFontFamily, monospace); font-size: .85em; width: 100%; resize: vertical; }
-.npcb-gurps-settings h4 { margin: 10px 0 4px; }
+.npcb-sheet-settings .gs-rules { font-family: var(--monoFontFamily, monospace); font-size: .85em; width: 100%; resize: vertical; }
+.npcb-sheet-settings h4 { margin: 10px 0 4px; }
 .gs-notice { margin-top: 10px; font-size: .8em; opacity: .75; }
 .gs-notice p { margin: 4px 0; }
 .gs-norules { padding: 6px 8px; border: 1px dashed var(--SmartThemeBorderColor); border-radius: 8px; }

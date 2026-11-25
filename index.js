@@ -1,4 +1,4 @@
-// NPC Book Character Sheet: a sister extension that adds a character sheet, for use with the GURPS® system,
+// NPC Book Character Sheet: a sister extension that adds a character sheet
 // to NPC Book cards and personas. Every rule number comes from the user's own rules config, which ships empty.
 // Entry point: wires settings, the settings panel, Roll Dice and NPC Book together.
 import { ctx, settings, applyRules } from './src/core/context.js';

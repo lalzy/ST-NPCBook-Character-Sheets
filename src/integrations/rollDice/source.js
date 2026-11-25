@@ -10,6 +10,7 @@ function entryFor(sheet, key, name, prefix) {
     return {
         key, name, prefix, rollables: rollablesFor(sheet), combat: combatActions(sheet), dr: totalDR(sheet),
         hp: c.values[role('health')] ?? null, fp: c.values[role('stamina')] ?? null, move: c.move, speed: c.values[role('speed')] ?? null,
+        ac: c.ac ?? null, // armor class, when the rules define one (passive defense)
         attrs: { ...c.attrVal }, // for resistance rolls
     };
 }
@@ -31,7 +32,7 @@ function getCharacters() {
 export function registerRollSource() {
     const rd = rollDice();
     if (!rd?.registerSource) return;
-    rd.registerSource({ id: 'gurps', label: 'Character sheet', getCharacters });
+    rd.registerSource({ id: EXT_ID, label: 'Character sheet', getCharacters });
 }
 
 /** Register now if Roll Dice is already loaded, and again whenever it announces itself. */

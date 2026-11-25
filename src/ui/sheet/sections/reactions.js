@@ -6,7 +6,7 @@ const WHO = ['everyone', 'attracted', 'others', 'same race', 'other races', 'aut
 const groupChip = (g, gi) => `
                   <span class="gs-group" data-gi="${gi}">
                     <input class="text_pole gs-g" data-field="who" value="${esc(g.who)}" placeholder="everyone / attracted / others…" list="gs-who">
-                    <input class="text_pole gs-g gs-pts" type="number" data-field="mod" value="${esc(g.mod)}">
+                    <input class="text_pole gs-g gs-num" type="number" data-field="mod" value="${esc(g.mod)}">
                     <button class="menu_button gs-delgroup" title="Remove group">✕</button>
                   </span>`;
 

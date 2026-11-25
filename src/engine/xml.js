@@ -5,7 +5,7 @@ import { num, fmt, signed } from '../utils/number.js';
 import { attrKeys, rules, secondaryList } from '../rules/ruleset.js';
 
 /** Tag names from the rules config (sheetXml), with plain defaults. */
-const tags = () => { const x = rules().sheetXml; return { level: x.level || 'level', relative: x.relative || 'relative', cost: x.cost || 'cost' }; };
+const tags = () => { const x = rules().sheetXml; return { level: x.level || 'level', cost: x.cost || 'cost' }; };
 
 const qa = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -38,13 +38,13 @@ const block = (tag, rows) => (rows.length ? [`<${tag}>`, ...rows, `</${tag}>`] :
 
 function traitsXml(sh) {
     return block('traits', sh.traits.filter(t => String(t.name || '').trim())
-        .map(t => `  <${xmlName(t.name, 'trait')} pt="${num(t.pts)}"${t.effect ? ` effect="${qa(t.effect)}"` : ''}/>`));
+        .map(t => `  <${xmlName(t.name, 'trait')}${t.effect ? ` effect="${qa(t.effect)}"` : ''}/>`));
 }
 
 function skillsXml(c) {
     const t = tags();
     return block('skills', c.skills.filter(s => String(s.name || '').trim() && s.level !== null)
-        .map(s => `  <${xmlName(s.name, 'skill')} ${t.level}="${s.level}" Pt="${s.pts}"${s.rsl ? ` ${t.relative}="${s.rsl}"` : ''}/>`));
+        .map(s => `  <${xmlName(s.name, 'skill')} ${t.level}="${s.level}"/>`));
 }
 
 function equipmentXml(sh) {

@@ -5,7 +5,7 @@ import { rollFromSheet, rollablesFor } from '../../integrations/rollDice/index.j
 import { setSecFromValue, stepValue, setListField, addRow, removeRow, addGroup } from './mutations.js';
 
 /** Edits that change which rows/options exist need a full redraw. */
-const REDRAW_ON_CHANGE = '.gs-f[data-list="traits"][data-field="pts"], select.gs-f, .gs-f[data-list="equipment"][data-field="category"], .gs-f[data-list="skills"][data-field="name"], .gs-f[data-list="abilities"][data-field="name"]';
+const REDRAW_ON_CHANGE = 'select.gs-f, .gs-f[data-list="equipment"][data-field="category"], .gs-f[data-list="skills"][data-field="name"], .gs-f[data-list="abilities"][data-field="name"]';
 
 export function bindSheetEvents(host, data, who, { draw, refresh }) {
     const reactionOf = (el) => data.reactions[Number($(el).closest('.gs-reaction').data('i'))];
@@ -37,7 +37,6 @@ export function bindSheetEvents(host, data, who, { draw, refresh }) {
     host.on('change.gs', '.gs-enable-cb', (e) => { data.enabled = e.target.checked; draw(); });
     host.on('input.gs', '.gs-attr', (e) => { data.attrs[$(e.target).data('key')] = Math.round(num(e.target.value, attrBase())); refresh(); });
     host.on('change.gs', '.gs-sec', (e) => { setSecFromValue(data, $(e.target).data('key'), e.target.value); refresh(); });
-    host.on('input.gs', '.gs-top', (e) => { data[$(e.target).data('key')] = num(e.target.value); refresh(); });
     host.on('click.gs', '.gs-dec, .gs-inc', (e) => {
         const box = $(e.currentTarget).closest('.gs-stepper');
         const cls = box.data('cls');
