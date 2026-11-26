@@ -13,5 +13,8 @@ export function rollablesFor(sheet) {
     for (const a of c.abilities.filter(x => String(x.name || '').trim() && x.level !== null)) {
         out.push({ group: 'Abilities', name: a.name, target: a.level });
     }
+    for (const a of (c.itemAbilities || []).filter(x => x.level !== null && !x.empty)) {
+        out.push({ group: 'Abilities', name: `${a.name} (${a.item})`, target: a.level });
+    }
     return out;
 }

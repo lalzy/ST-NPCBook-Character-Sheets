@@ -11,8 +11,9 @@ export function defaultSheet() {
         sec: {},        // { [secondary key]: steps above / below its base }
         traits: [],     // { name, effect }
         skills: [],     // { name, attr, level }
-        equipment: [],  // { name, qty, weight (each), value (each), category, stat, effect }
-        abilities: [],  // { name, kind, use: ranged|melee|utility, skill, damage, range, cost, effect }
+        equipment: [],  // { name, qty, weight (each), value (each), category (label only), equipped, effect, blocks: [...] } (see items.js; old items: stat, skill)
+        abilities: [],  // { name, kind, use: ranged|melee|utility, skill, damage, range, cost, resource, dc, save, defendWith, castTime, hits: roll|auto, effect }
+        hpRolls: [],    // HP dice rolled so far (rules hpRoll), one per level
         reactions: [],  // { name, groups: [{ who, mod }] }
         notes: '',
     };
@@ -34,6 +35,6 @@ export function normalizeSheet(s) {
     if (s && s.enabled === undefined) o.enabled = !isBlankSheet(s);
     o.attrs = { ...d.attrs, ...(s?.attrs || {}) };
     o.sec = { ...(s?.sec || {}) };
-    for (const k of ['traits', 'skills', 'equipment', 'abilities', 'reactions']) o[k] = Array.isArray(s?.[k]) ? s[k] : [];
+    for (const k of ['traits', 'skills', 'equipment', 'abilities', 'reactions', 'hpRolls']) o[k] = Array.isArray(s?.[k]) ? s[k] : [];
     return o;
 }

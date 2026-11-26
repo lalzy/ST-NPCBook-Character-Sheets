@@ -63,6 +63,9 @@ function addAbilities(sh, g) {
             skill: String(row.skill ?? ''), damage: String(row.damage ?? row.amount ?? ''),
             stat: ABILITY_STATS.includes(stat) ? stat : '', mod: num(row.mod), duration: digits(row.turns ?? row.duration), resist,
             range: digits(row.range ?? row.reach), cost: digits(row.fp ?? row.cost), effect: String(row.effect ?? ''),
+            dc: row.dc === undefined || row.dc === null ? '' : String(row.dc), save: String(row.save ?? '').toLowerCase() === 'half' ? 'half' : 'none',
+            resource: String(row.resource ?? ''), defendWith: String(row.defendWith ?? row.defended_by ?? ''),
+            castTime: digits(row.castTime ?? row.cast_time), hits: /^(auto|yes|true|always)/i.test(String(row.hits ?? row.always_hits ?? '')) ? 'auto' : 'roll',
         });
     }
 }
@@ -70,7 +73,7 @@ function addAbilities(sh, g) {
 /**
  * entry.sheet (older chats used the extension id as the key) = { [attribute key]: value…, skills: [[name, attr, level], ...] | {name: level},
  *     traits: [[name, effect], ...] | [name], equipment: [name | {name, category, damage, armor, weight, value}],
- *     abilities: [{name, kind, use, fx, on, skill, damage, stat, mod, turns, resist, range, fp, effect}] }
+ *     abilities: [{name, kind, use, fx, on, skill, damage, stat, mod, turns, resist, dc, save, resource, range, fp, effect}] }
  */
 export function sheetFromLLM(g) {
     const sh = defaultSheet();

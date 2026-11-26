@@ -1,7 +1,9 @@
 // Registers the character-sheet source with Roll Dice.
-import { EXT_ID } from '../../core/constants.js';
+import { EXT_ID, LEGACY_EXT_ID } from '../../core/constants.js';
+import { currentOrLegacy } from '../../core/migrate.js';
 import { settings } from '../../core/context.js';
-import { normalizeSheet, combatActions, totalDR, compute, role } from '../../engine/index.js';
+import { rules } from '../../rules/ruleset.js';
+import { normalizeSheet, isBlankSheet, combatActions, totalDR, compute, role, sheetMacros, armorList } from '../../engine/index.js';
 import { rollDice } from './api.js';
 import { rollablesFor } from './rollables.js';
 
@@ -9,9 +11,13 @@ function entryFor(sheet, key, name, prefix) {
     const c = compute(sheet);
     return {
         key, name, prefix, rollables: rollablesFor(sheet), combat: combatActions(sheet), dr: totalDR(sheet),
+        armor: armorList(sheet), // [{ name, dr, covers }]: worn armor and where ("DR 4 covers torso"), for armor by hit location
         hp: c.values[role('health')] ?? null, fp: c.values[role('stamina')] ?? null, move: c.move, speed: c.values[role('speed')] ?? null,
         ac: c.ac ?? null, // armor class, when the rules define one (passive defense)
         attrs: { ...c.attrVal }, // for resistance rolls
+        resources: c.resources, // [{ name, max }]: what abilities spend (FP, mana, slots…)
+        macros: sheetMacros(sheet), // [{ name, arg, args, from }]: effect macros in trait / item text, e.g. {{haste}}, {{immunity cold}}
+        macroDefs: rules().macros, // what they do: the home-brew macro definitions of these rules (Combat Mode applies them)
     };
 }
 
@@ -20,10 +26,10 @@ function getCharacters() {
     if (!api || !settings().enabled) return [];
     const out = [];
     const scene = api.getScene ? api.getScene() : { roster: [], userName: '' };
-    const me = api.getPersonaData?.(EXT_ID);
+    const me = currentOrLegacy(api.getPersonaData?.(EXT_ID), api.getPersonaData?.(LEGACY_EXT_ID), isBlankSheet);
     if (me && normalizeSheet(me).enabled) out.push(entryFor(me, 'user', `${scene.userName || 'You'} (you)`, ''));
     for (const npc of scene.roster) {
-        const sh = npc.template?.ext?.[EXT_ID];
+        const sh = currentOrLegacy(npc.template?.ext?.[EXT_ID], npc.template?.ext?.[LEGACY_EXT_ID], isBlankSheet);
         if (sh && normalizeSheet(sh).enabled) out.push(entryFor(sh, npc.id, npc.name, `${npc.name}'s`));
     }
     return out;

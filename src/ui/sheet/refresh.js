@@ -3,6 +3,7 @@ import { secondaryList, rules, compute } from '../../engine/index.js';
 import { fmt } from '../../utils/number.js';
 import { abilityLevelLabel, inventoryLabel, encumbranceLine } from './labels.js';
 import { rollBtn } from './widgets.js';
+import { hpRollLine } from './sections/secondary.js';
 
 const dash = (v) => (v === null || v === undefined ? '—' : v);
 
@@ -18,6 +19,7 @@ export function refreshComputed(host, data) {
     set('dodge', dash(c.dodge)); set('ac', dash(c.ac)); set('move', dash(c.move)); set('enc', c.encumbrance);
     c.skills.forEach((s, i) => set(`skill-${i}`, s.level !== null && String(s.name || '').trim() ? rollBtn(s.name, s.level) : ''));
     c.abilities.forEach((a, i) => set(`ability-${i}`, abilityLevelLabel(a)));
+    set('hprolls', hpRollLine(c));
     set('inv', inventoryLabel(c));
     set('encline', encumbranceLine(c));
 }

@@ -9,9 +9,14 @@ export const ABILITY_USES = ['ranged', 'melee', 'utility'];
 /**
  * What an ability does when it works (applied by Combat Mode):
  * damage · heal (HP) · fp (restore FP) · buff / debuff (a modifier for some turns) · stun · disarm ·
+ * haste (extra actions each turn for some turns) · poison / bleed (damage at the end of each of the target's turns) ·
  * none (no automatic effect: the roll is made, and the narration or the user decides what happens).
  */
-export const ABILITY_FX = ['damage', 'heal', 'fp', 'buff', 'debuff', 'stun', 'disarm', 'none'];
+export const ABILITY_FX = ['damage', 'heal', 'fp', 'buff', 'debuff', 'stun', 'disarm', 'haste', 'poison', 'bleed', 'none'];
+/** Effects whose dice are rolled (damage, healing, restoring, damage over time). */
+export const DICE_FX = ['damage', 'heal', 'fp', 'poison', 'bleed'];
+/** What happens when the target makes its save against an ability with a DC: nothing happens, or half damage. */
+export const SAVE_RESULTS = ['none', 'half'];
 /** Who an ability may be used on. */
 export const ABILITY_AIMS = ['enemy', 'ally', 'self', 'any'];
 /** What a buff / debuff modifies. 'all' = attack, defense, skill and resistance rolls. */

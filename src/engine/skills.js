@@ -1,4 +1,5 @@
-// Skill level ↔ points, from the user's cost table. Without a table, the number typed in is the level above the attribute.
+// Skill level ↔ points, from the rules' cost table (skillCosts, skillCostEach) and difficulties (skillDifficulties).
+// Levels are relative: attribute + difficulty base + the table's level. Without a table, levels are typed in.
 import { rules, diffBase, skillsUsePoints } from '../rules/ruleset.js';
 import { num } from '../utils/number.js';
 
