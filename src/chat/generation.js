@@ -25,6 +25,6 @@ export function setChatChoice(value) {
     if (value === undefined) { if (meta[MODULE]) delete meta[MODULE].generate; }
     else meta[MODULE] = { ...(meta[MODULE] || {}), generate: value };
     ctx().saveMetadataDebounced?.();
-    window.NPCBook?.refreshScene?.();
+    window.NPCBook?.refreshScene();
     for (const fn of listeners) fn();
 }

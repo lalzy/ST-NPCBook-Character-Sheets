@@ -1,9 +1,8 @@
 // Registers the character-sheet source with Roll Dice.
-import { EXT_ID, LEGACY_EXT_ID } from '../../core/constants.js';
-import { currentOrLegacy } from '../../core/migrate.js';
+import { EXT_ID } from '../../core/constants.js';
 import { settings } from '../../core/context.js';
 import { rules } from '../../rules/ruleset.js';
-import { normalizeSheet, isBlankSheet, combatActions, totalDR, compute, role, sheetMacros, armorList } from '../../engine/index.js';
+import { normalizeSheet, combatActions, totalDR, compute, role, sheetMacros, armorList } from '../../engine/index.js';
 import { rollDice } from './api.js';
 import { rollablesFor } from './rollables.js';
 
@@ -25,11 +24,11 @@ function getCharacters() {
     const api = window.NPCBook;
     if (!api || !settings().enabled) return [];
     const out = [];
-    const scene = api.getScene ? api.getScene() : { roster: [], userName: '' };
-    const me = currentOrLegacy(api.getPersonaData?.(EXT_ID), api.getPersonaData?.(LEGACY_EXT_ID), isBlankSheet);
+    const scene = api.getScene();
+    const me = api.getPersonaData(EXT_ID);
     if (me && normalizeSheet(me).enabled) out.push(entryFor(me, 'user', `${scene.userName || 'You'} (you)`, ''));
     for (const npc of scene.roster) {
-        const sh = currentOrLegacy(npc.template?.ext?.[EXT_ID], npc.template?.ext?.[LEGACY_EXT_ID], isBlankSheet);
+        const sh = npc.instance?.ext?.[EXT_ID];
         if (sh && normalizeSheet(sh).enabled) out.push(entryFor(sh, npc.id, npc.name, `${npc.name}'s`));
     }
     return out;

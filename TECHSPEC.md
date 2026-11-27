@@ -13,9 +13,8 @@ index.js                      entry point
 src/
   core/
     constants.js              MODULE (settings key) and EXT_ID (NPC Book / Roll Dice id), both 'NPC_Book_character_sheet';
-                              LEGACY_MODULE / LEGACY_EXT_ID (old keys), TITLE, DEFAULTS, CATEGORIES
+                              TITLE, DEFAULTS, CATEGORIES
     context.js                ctx(), settings(), chatMeta(), applyRules()
-    migrate.js                moves data saved under the old keys to the new ones (settings, chat metadata, card ext)
   rules/
     ruleset.js                EMPTY_RULES, BLANK_TEMPLATE, normalizeRules, setRules / rules(), helpers
     formula.js                evalFormula, formulaError (safe arithmetic, no eval)
@@ -127,7 +126,7 @@ Items count as weapons when `category` matches `weapon|shield|ranged|melee`.
 "sheet": {"<attribute key>": n, …, "skills": [["Skill name", "<default attribute>", 12]], "traits": [["Trait name", "short note"]], "equipment": [{"name": "Item", "category": "weapon", "damage": "1d6+1", "weight": 2}], "abilities": [{"name": "Ability", "kind": "spell", "use": "ranged", "fx": "damage", "on": "enemy", "skill": "Ability", "damage": "2d", "range": 20, "fp": 2}]}
 ```
 
-Accepted shapes (older chats wrote the key `EXT_ID`; it is still read):
+Accepted shapes:
 
 - Attributes: numbers, clamped to 1–99 and rounded.
 - `skills`: `[name, attr, level]`, `[name, level]`, `{ name, attr, level }`, or `{ "Name": level }` (with more than three items the last one is the level). Unknown attr → the default attribute.

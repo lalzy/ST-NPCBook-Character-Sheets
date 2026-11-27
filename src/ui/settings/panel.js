@@ -6,7 +6,7 @@ import { chatChoice, generateInChat, setChatChoice } from '../../chat/generation
 import { BLANK_TEMPLATE, normalizeRules, formulaError } from '../../engine/index.js';
 import { settingsHtml } from './template.js';
 import { GENERIC_RULES } from '../../rules/generic.js';
-import { mountRulesTemplates, isTemplateStore, storeFromNamed } from '../rulesTemplates.js';
+import { mountRulesTemplates, isTemplateStore, newStore } from '../rulesTemplates.js';
 
 /** The settings panel line for the open chat: its sheet setting and where it comes from. */
 export function renderChatState() {
@@ -37,14 +37,11 @@ function formulaProblems(r) {
     return out;
 }
 
-/** Rules templates kept in the old { [name]: rules } map (before the shared block). */
-const legacyMap = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-
-/** The rules templates in the shared shape; older settings are moved over once (the old keys stay for downgrades). */
+/** The rules templates in the shared shape (made on first use). */
 function templateStore() {
     const s = settings();
     if (!isTemplateStore(s.rulesTemplates)) {
-        s.rulesTemplates = storeFromNamed(legacyMap(s.ruleTemplates), { activeRules: s.rules || {}, activeName: 'My rules', builtIns: BUILT_INS });
+        s.rulesTemplates = newStore({ activeRules: s.rules || {}, activeName: 'My rules', builtIns: BUILT_INS });
         ctx().saveSettingsDebounced();
     }
     return s.rulesTemplates;
@@ -66,7 +63,7 @@ function mountRules(html) {
             settings().rules = obj;
             ctx().saveSettingsDebounced();
             const r = applyRules();
-            window.NPCBook?.refreshScene?.();
+            window.NPCBook?.refreshScene();
             return r.macros.length ? `Home-brew macros: ${r.macros.map(m => `{{${m.name}}}`).join(', ')} (Combat Mode applies them).` : '';
         },
         exportName: 'character-sheet-rules',
@@ -79,7 +76,7 @@ export function mountSettings() {
     bind(html, '#gs_enabled', 'enabled', 'checkbox');
     bind(html, '#gs_send', 'sendXml', 'checkbox');
     bind(html, '#gs_gen', 'generateForNew', 'checkbox');
-    html.find('#gs_gen').on('change', () => { window.NPCBook?.refreshScene?.(); renderChatState(); });
+    html.find('#gs_gen').on('change', () => { window.NPCBook?.refreshScene(); renderChatState(); });
     html.find('#gs_chatreset').on('click', () => { setChatChoice(undefined); renderChatState(); });
     mountRules(html);
     renderChatState();

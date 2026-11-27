@@ -30,7 +30,7 @@ export function sheetMacros(sheet) {
     const out = [];
     for (const t of sh.traits) for (const m of macrosIn(`${t.name || ''} ${t.effect || ''}`)) out.push({ ...m, from: String(t.name || '') });
     for (const e of sh.equipment) {
-        for (const m of macrosIn(`${e.name || ''} ${e.stat || ''} ${e.effect || ''}`)) out.push({ ...m, from: String(e.name || '') });
+        for (const m of macrosIn(`${e.name || ''} ${e.effect || ''}`)) out.push({ ...m, from: String(e.name || '') });
         // an ability stored on an item: its macros apply to that ability ("Fireball (Oak Wand)")
         for (const b of itemBlocks(e).filter(x => x.type === 'ability' && String(x.name || '').trim())) {
             for (const m of macrosIn(`${b.name || ''} ${b.kind || ''} ${b.effect || ''}`)) out.push({ ...m, from: `${String(b.name).trim()} (${String(e.name || '').trim()})` });

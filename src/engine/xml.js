@@ -110,12 +110,11 @@ function equipmentXml(sh, c) {
             e.equipped === false && 'equipped="no"',
             num(e.weight) > 0 && `weight="${qa(`${fmt(num(e.weight))}${rules().liftUnit}`)}"`,
             num(e.value) > 0 && `value="${qa(`$${fmt(num(e.value))}`)}"`,
-            !Array.isArray(e.blocks) && e.stat && `stat="${qa(e.stat)}"`,
             e.effect && `effect="${qa(e.effect)}"`,
         ].filter(Boolean).join(' ');
         const tag = xmlName(e.name, 'item');
         const open = `${tag}${attrs ? ` ${attrs}` : ''}`;
-        const kids = Array.isArray(e.blocks) ? e.blocks.map((b, bi) => blockXml(b, bi, e, i, c, sh.equipment)).filter(Boolean) : [];
+        const kids = (Array.isArray(e.blocks) ? e.blocks : []).map((b, bi) => blockXml(b, bi, e, i, c, sh.equipment)).filter(Boolean);
         if (!kids.length) rows.push(`  <${open}/>`);
         else rows.push(`  <${open}>`, ...kids.map(k => `    ${k}`), `  </${tag}>`);
     });

@@ -116,5 +116,3 @@
 .gs-bhead .menu_button { margin: 0; padding: 1px 7px; min-width: 0; }
 .gs-addblocks { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
 .gs-addblocks .menu_button { margin: 0; padding: 2px 8px; min-width: 0; font-size: .85em; }
-.gs-legacy { font-size: .8em; opacity: .8; margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.gs-legacy .menu_button { margin: 0; padding: 2px 8px; min-width: 0; }

@@ -42,28 +42,20 @@ export function uniqueId(name, taken) {
 export const isTemplateStore = (v) => isObj(v) && typeof v.active === 'string' && isObj(v.items);
 
 /**
- * A store in the shared shape from the older { [name]: rules } map.
- * activeRules: the rules in use now. They become the active template: the stored or built-in one with the same
+ * A new store in the shared shape.
+ * activeRules: the rules in use now. They become the active template: the built-in one with the same
  * rules, else a new template called activeName.
  */
-export function storeFromNamed(named, { activeRules, activeName = 'My rules', builtIns = [] } = {}) {
+export function newStore({ activeRules, activeName = 'My rules', builtIns = [] } = {}) {
     const items = {};
-    const taken = (id) => !!items[id] || builtIns.some(b => b.id === id);
-    for (const [name, rules] of Object.entries(isObj(named) ? named : {})) {
-        if (!isObj(rules) || !String(name).trim()) continue;
-        items[uniqueId(name, taken)] = { name: String(name).trim(), rules: copy(rules), updatedAt: Date.now() };
-    }
     let active = builtIns[0]?.id || '';
     if (isObj(activeRules)) {
         const want = stableJson(activeRules);
-        const hit = Object.entries(items).find(([, t]) => stableJson(t.rules) === want)?.[0]
-            || builtIns.find(b => stableJson(b.rules) === want)?.id;
+        const hit = builtIns.find(b => stableJson(b.rules) === want)?.id;
         if (hit) active = hit;
         else {
-            let name = activeName;
-            for (let n = 2; Object.values(items).some(t => t.name.toLowerCase() === name.toLowerCase()); n++) name = `${activeName} (${n})`;
-            active = uniqueId(name, taken);
-            items[active] = { name, rules: copy(activeRules), updatedAt: Date.now() };
+            active = uniqueId(activeName, (id) => builtIns.some(b => b.id === id));
+            items[active] = { name: activeName, rules: copy(activeRules), updatedAt: Date.now() };
         }
     }
     return { active, items };

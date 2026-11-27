@@ -1,7 +1,7 @@
 // Items built from blocks: attacks, ammo, armor slots, modifiers, item abilities with charges, and the XML they send.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { setRules, compute, combatActions, toXml, armorList, totalDR, spendUse, normalizeSheet } from '../src/engine/index.js';
+import { setRules, compute, combatActions, toXml, armorList, totalDR, spendUse, normalizeSheet, itemFromText, sheetFromLLM } from '../src/engine/index.js';
 
 const RULES = {
     attributes: [{ key: 'Dex', label: 'Dexterity' }, { key: 'Mind', label: 'Mind' }], attrBase: 10, roles: { defaultAttr: 'Dex' },
@@ -74,10 +74,9 @@ test('item ability: fixed level, the wielder does not need to know it, charges s
     assert.deepEqual(fb.charges, { pool: 'Charges', left: 1, max: 7 });
 });
 
-test('XML: category as typed, blocks as child elements, old items keep their stat', () => {
+test('XML: category as typed, blocks as child elements', () => {
     setRules(RULES);
     const sh = sheet();
-    sh.equipment.push({ name: 'Old Sword', category: 'weapon', stat: 'sw cut' });
     const x = toXml(sh);
     assert.match(x, /<Longbow_3 category="whatever">/);
     assert.match(x, /<attack skill="Bow" damage="1d8" use="ranged" range="150"\/>/);
@@ -87,16 +86,20 @@ test('XML: category as typed, blocks as child elements, old items keep their sta
     assert.match(x, /<ability name="Fireball"[^>]*level="15"/);
     assert.match(x, /<charges name="Charges" left="1" max="7"\/>/);
     assert.match(x, /<Arrows qty="2" category="ammo"\/>/);
-    assert.match(x, /<Old_Sword category="weapon" stat="sw cut"\/>/);
 });
 
-test('old items (no blocks) still work as before', () => {
+test('items the LLM describes by text get blocks', () => {
     setRules(RULES);
     const acts = combatActions({ enabled: true, attrs: { Dex: 12 }, skills: [{ name: 'Sword', attr: 'Dex', level: 12 }],
-        equipment: [{ name: 'Sword', category: 'weapon', stat: 'sw cut', qty: 1 }, { name: 'Mail', category: 'armor', stat: 'DR 3 covers torso, arms', qty: 1 }] });
+        equipment: [{ name: 'Sword', category: 'weapon', stat: 'sw cut', qty: 1 }, { name: 'Mail', category: 'armor', stat: 'DR 3 covers torso, arms', qty: 1 }].map(itemFromText) });
     assert.equal(find(acts, 'Sword Attack').target, 12);
     assert.equal(find(acts, 'Parry (Sword)').target, 9);
-    assert.deepEqual(armorList({ equipment: [{ name: 'Mail', category: 'armor', stat: 'DR 3 covers torso, arms', qty: 1 }] }), [{ name: 'Mail', dr: 3, covers: ['torso', 'arms'] }]);
+    assert.deepEqual(armorList({ equipment: [itemFromText({ name: 'Mail', category: 'armor', stat: 'DR 3 covers torso, arms', qty: 1 })] }), [{ name: 'Mail', dr: 3, covers: ['torso', 'arms'] }]);
+    const sh = sheetFromLLM({ equipment: [{ name: 'Sword', category: 'weapon', damage: 'sw cut {{flaming}}' }, { name: 'Mail', category: 'armor', armor: 3 }, 'Rope'] });
+    assert.deepEqual(sh.equipment.map(e => e.blocks.map(b => b.type)), [['attack'], ['defense'], []]);
+    assert.equal(sh.equipment[0].blocks[0].damage, 'sw cut');
+    assert.equal(sh.equipment[0].effect, '{{flaming}}', 'macros in the text move to the story notes');
+    assert.ok(!('stat' in sh.equipment[0]) && !('skill' in sh.equipment[0]));
 });
 
 test('rules itemPresets: kept from the rules; formulas in [brackets]; Consumes can spend a pool', async () => {

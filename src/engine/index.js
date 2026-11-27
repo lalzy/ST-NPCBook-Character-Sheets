@@ -15,4 +15,4 @@ export { sheetFromLLM } from './llm.js';
 export { parseDice, weaponDamage, parseDR, totalDR, armorItem, armorCovers, armorList, gearBonuses } from './dice.js';
 export { relativeLevel, pointsForRelative } from './skills.js';
 export { combatActions, weaponSkill } from './combat.js';
-export { BLOCK_TYPES, DEFENSE_KINDS, MOD_WHEN, SLOT_SUGGESTIONS, NEW_BLOCK, legacyBlocks, itemBlocks, isCarried, isEquipped, modTargets, modTargetLabel, slotList, ammoOf, chargesOf, spendUse, ammoCandidates, poolCostsOf, consumablePools, expandFormulas } from './items.js';
+export { BLOCK_TYPES, DEFENSE_KINDS, MOD_WHEN, SLOT_SUGGESTIONS, NEW_BLOCK, blocksFromText, itemFromText, itemBlocks, isCarried, isEquipped, modTargets, modTargetLabel, slotList, ammoOf, chargesOf, spendUse, ammoCandidates, poolCostsOf, consumablePools, expandFormulas } from './items.js';

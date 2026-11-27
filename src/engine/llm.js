@@ -3,6 +3,7 @@
 import { ABILITY_USES, ABILITY_FX, ABILITY_AIMS, ABILITY_STATS, resistAttrs } from './rules.js';
 import { attrKeys, defaultAttr, skillAttrs } from '../rules/ruleset.js';
 import { defaultSheet } from './sheet.js';
+import { itemFromText } from './items.js';
 import { num } from '../utils/number.js';
 
 function addSkills(sh, g) {
@@ -34,14 +35,14 @@ const digits = (v) => num(String(v ?? '').replace(/[^\d.]/g, ''));
 
 function addEquipment(sh, g) {
     for (const it of Array.isArray(g.equipment) ? g.equipment : []) {
-        if (typeof it === 'string') sh.equipment.push({ name: it, qty: 1, weight: 0, value: 0, category: '', stat: '', effect: '' });
+        if (typeof it === 'string') sh.equipment.push({ name: it, qty: 1, weight: 0, value: 0, category: '', effect: '', blocks: [] });
         else if (it?.name) {
             const armor = digits(it.armor);
             const stat = String(it.stat ?? it.damage ?? '') || (armor ? `DR ${armor}` : '');
-            sh.equipment.push({
+            sh.equipment.push(itemFromText({
                 name: String(it.name), qty: num(it.qty, 1) || 1, weight: digits(it.weight), value: digits(it.value),
                 category: String(it.category ?? ''), stat, skill: String(it.skill ?? ''), effect: String(it.effect ?? ''),
-            });
+            }));
         }
     }
 }
@@ -71,7 +72,7 @@ function addAbilities(sh, g) {
 }
 
 /**
- * entry.sheet (older chats used the extension id as the key) = { [attribute key]: value…, skills: [[name, attr, level], ...] | {name: level},
+ * entry.sheet = { [attribute key]: value…, skills: [[name, attr, level], ...] | {name: level},
  *     traits: [[name, effect], ...] | [name], equipment: [name | {name, category, damage, armor, weight, value}],
  *     abilities: [{name, kind, use, fx, on, skill, damage, stat, mod, turns, resist, dc, save, resource, range, fp, effect}] }
  */

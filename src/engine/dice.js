@@ -70,7 +70,6 @@ export function armorItem(e) {
 
 /**
  * Defense bonuses from gear: every active modifier block aimed at dodge / parry / block / armorClass.
- * Items saved before blocks existed get these from the rules' gearBonuses ("DB 2" in the stat text), as before.
  * Returns { dodge, parry, block, armorClass }.
  */
 export function gearBonuses(sheet) {

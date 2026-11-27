@@ -179,11 +179,6 @@ function summary(data, e) {
     return parts.join(' · ');
 }
 
-/** An item saved before blocks existed: its old stat / skill text, and a button that turns it into blocks. */
-const legacyNote = (e) => (Array.isArray(e.blocks) ? '' : `
-                <div class="gs-legacy">Old item: stat <b>${esc(e.stat || '—')}</b>${e.skill ? `, skill <b>${esc(e.skill)}</b>` : ''}. It works as before.
-                  <button class="menu_button gs-convert" title="Turn the old stat text into blocks you can edit">Convert to blocks</button></div>`);
-
 const itemCard = (data, acts) => (e, i) => {
     const open = openItems.has(e);
     return `
@@ -203,7 +198,7 @@ const itemCard = (data, acts) => (e, i) => {
                   ${field('Value', `<input class="text_pole gs-f" type="number" min="0" data-list="equipment" data-field="value" value="${esc(e.value)}">`, 'Each.', 'gs-fnum')}
                   ${field('Equipped', `<input type="checkbox" class="gs-equip" ${e.equipped === false ? '' : 'checked'}>`, 'Worn / in hand.', 'gs-fnum')}
                   ${field('Story notes', `<input class="text_pole gs-f" data-list="equipment" data-field="effect" value="${esc(e.effect)}" placeholder="Looks, history… (sent to the AI)">`, 'For the AI only. Combat reads the blocks.', 'gs-ffull')}
-                </div>${legacyNote(e)}
+                </div>
                 ${(Array.isArray(e.blocks) ? e.blocks : []).map(blockHtml(data, e)).join('')}
                 <div class="gs-addblocks"><span class="gs-dim">Add block:</span>${Object.keys(BLOCK_LABEL).map(t => `<button class="menu_button gs-addblock" data-type="${t}" title="${esc(BLOCK_HINT[t])}">+ ${BLOCK_LABEL[t]}</button>`).join('')}</div>` : ''}
               </div>`;

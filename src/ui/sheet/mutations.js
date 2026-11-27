@@ -1,5 +1,5 @@
 // Edits to the sheet draft (pure data, no DOM).
-import { secondaryList, attrBase, defaultAttr, compute, rules, NEW_BLOCK, legacyBlocks } from '../../engine/index.js';
+import { secondaryList, attrBase, defaultAttr, compute, rules, NEW_BLOCK } from '../../engine/index.js';
 import { num } from '../../utils/number.js';
 
 /** Set a secondary stat from the value typed in (stored as steps from its base). */
@@ -55,11 +55,11 @@ export function addItem(data, preset) {
     return e;
 }
 
-/** Add a block of `type` to item i (an old item first gets the blocks its stat text gave it). */
+/** Add a block of `type` to item i. */
 export function addBlock(data, i, type) {
     const e = data.equipment[i];
     if (!e || !NEW_BLOCK[type]) return;
-    if (!Array.isArray(e.blocks)) convertItem(data, i);
+    if (!Array.isArray(e.blocks)) e.blocks = [];
     e.blocks.push(NEW_BLOCK[type]());
 }
 
@@ -71,18 +71,6 @@ export function removeBlock(data, i, bi) {
 export function setBlockField(data, i, bi, field, raw) {
     const b = data.equipment[i]?.blocks?.[bi];
     if (b) b[field] = BLOCK_NUMERIC.includes(field) ? num(raw) : raw;
-}
-
-/** Turn an old item (stat / skill text) into blocks. Macros in the old stat text move to the story notes, so they still apply. */
-export function convertItem(data, i) {
-    const e = data.equipment[i];
-    if (!e || Array.isArray(e.blocks)) return;
-    e.blocks = legacyBlocks(e);
-    const macros = String(e.stat || '').match(/\{\{[^}]*\}\}/g);
-    if (macros) e.effect = `${String(e.effect || '').trim()} ${macros.join(' ')}`.trim();
-    if (macros) for (const b of e.blocks) if (b.type === 'attack') b.damage = String(b.damage || '').replace(/\{\{[^}]*\}\}/g, '').trim();
-    delete e.stat;
-    delete e.skill;
 }
 
 export function addGroup(reaction) {

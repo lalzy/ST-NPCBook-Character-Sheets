@@ -7,8 +7,7 @@
 //   charges   { type, name, left, max }
 //   consumes  { type, from: item|pool, item, pool, per }  (an item such as arrows, or a resource pool such as FP / mana / HP)
 // Nothing here depends on a rule set: lists (attributes, skills, pools) come from the active rules.
-// Items saved before blocks existed (no `blocks` array, e.g. made by the LLM) get blocks derived from their old
-// category / stat / skill fields, so they keep working exactly as before.
+// Items the LLM writes (category / damage / armor / skill text) are turned into blocks when the sheet is made (itemFromText).
 import { rules, attrKeys, secondaryList, role, statLabel } from '../rules/ruleset.js';
 import { evalFormula } from '../rules/formula.js';
 import { resourceNames } from './abilities.js';
@@ -42,8 +41,8 @@ function categoryIs(e, list) {
     return list.some(w => cat.split(/[^a-z0-9]+/).includes(w) || cat === w);
 }
 
-/** Old-style armor item: the rules' armorCategories, else categories with "armor" in them. */
-function legacyArmorItem(e) {
+/** Armor item by category: the rules' armorCategories, else categories with "armor" in them. */
+function textArmorItem(e) {
     const list = rules().armorCategories;
     if (!list.length) return /armou?r/.test(lc(e?.category));
     return categoryIs(e, list);
@@ -51,7 +50,7 @@ function legacyArmorItem(e) {
 
 const parseDR = (stat) => { const m = String(stat ?? '').match(/\b(?:DR|armou?r)\s*(\d+)/i); return m ? Number(m[1]) : 0; };
 
-function legacyCovers(stat) {
+function textCovers(stat) {
     const m = /\bcovers?\s*:?\s*([^;.()\d]+)/i.exec(String(stat ?? ''));
     if (!m) return [];
     return m[1].split(/\s*(?:,|\/|&|\band\b)\s*/i).map(x => x.trim().toLowerCase()).filter(Boolean);
@@ -59,8 +58,8 @@ function legacyCovers(stat) {
 
 const hasDice = (stat) => /^\s*(?:sw|swing|thr|thrust|\d+d\d*|[+-]?\d+(?!\s*(?:d|%)))/i.test(String(stat ?? '')) && !/^\s*(?:DR|armou?r|DB|AC)\b/i.test(String(stat ?? ''));
 
-/** Blocks for an item saved before blocks existed, worked out from its category, stat and skill (the old behavior). */
-export function legacyBlocks(e) {
+/** Blocks for an item described by text (category, stat and skill), as the LLM writes it. */
+export function blocksFromText(e) {
     const out = [];
     const cat = String(e?.category || '');
     const stat = String(e?.stat || '');
@@ -70,7 +69,7 @@ export function legacyBlocks(e) {
         if (!shield || hasDice(stat)) out.push({ ...NEW_BLOCK.attack(), skill: String(e.skill || ''), damage: stat, use: /ranged/i.test(cat) ? 'ranged' : 'melee' });
         if (shield) out.push({ ...NEW_BLOCK.defense(), kind: 'block', value: '', skill: String(e.skill || '') });
     }
-    if (legacyArmorItem(e) && parseDR(stat) > 0) out.push({ ...NEW_BLOCK.defense(), kind: 'armor', value: parseDR(stat), slots: legacyCovers(stat).join(', ') });
+    if (textArmorItem(e) && parseDR(stat) > 0) out.push({ ...NEW_BLOCK.defense(), kind: 'armor', value: parseDR(stat), slots: textCovers(stat).join(', ') });
     for (const g of rules().gearBonuses || []) {
         if (!categoryIs(e, g.categories)) continue;
         const rx = new RegExp(`(?:^|[^A-Za-z0-9])${g.word.replace(/[-]/g, '\\-')}\\s*:?\\s*([+-]?\\s*\\d+(?:\\.\\d+)?)(?![A-Za-z0-9])`, 'i');
@@ -82,8 +81,23 @@ export function legacyBlocks(e) {
     return out;
 }
 
-/** An item's blocks: its own list, or ones derived from old fields. */
-export const itemBlocks = (e) => (Array.isArray(e?.blocks) ? e.blocks.filter(b => b && BLOCK_TYPES.includes(b.type)) : legacyBlocks(e));
+/**
+ * An item with blocks from one described by text ({ name, category, stat, skill, … }). Macros in the stat text move to
+ * the story notes, so they still apply. stat and skill are not kept.
+ */
+export function itemFromText(e) {
+    const { stat = '', skill, ...item } = e || {};
+    item.blocks = blocksFromText(e);
+    const macros = String(stat).match(/\{\{[^}]*\}\}/g);
+    if (macros) {
+        item.effect = `${String(item.effect || '').trim()} ${macros.join(' ')}`.trim();
+        for (const b of item.blocks) if (b.type === 'attack') b.damage = String(b.damage || '').replace(/\{\{[^}]*\}\}/g, '').trim();
+    }
+    return item;
+}
+
+/** An item's blocks. */
+export const itemBlocks = (e) => (Array.isArray(e?.blocks) ? e.blocks.filter(b => b && BLOCK_TYPES.includes(b.type)) : []);
 
 /** Carried: qty above 0. Equipped: carried and not switched off. */
 export const isCarried = (e) => num(e?.qty, 1) > 0;

@@ -2,7 +2,7 @@
 import { combatActions, attrBase, spendUse, rules } from '../../engine/index.js';
 import { num } from '../../utils/number.js';
 import { rollFromSheet, rollablesFor } from '../../integrations/rollDice/index.js';
-import { setSecFromValue, stepValue, setListField, addRow, removeRow, addGroup, rollHp, addItem, addBlock, removeBlock, setBlockField, convertItem } from './mutations.js';
+import { setSecFromValue, stepValue, setListField, addRow, removeRow, addGroup, rollHp, addItem, addBlock, removeBlock, setBlockField } from './mutations.js';
 import { openItems, ITEM_PRESETS } from './sections/inventory.js';
 
 /** Edits that change which rows/options exist need a full redraw. */
@@ -93,7 +93,6 @@ export function bindSheetEvents(host, data, who, { draw, refresh }) {
     host.on('change.gs', '.gs-equip', (e) => { data.equipment[itemIndex(e.currentTarget)].equipped = e.target.checked; draw(); });
     host.on('click.gs', '.gs-addblock', (e) => { addBlock(data, itemIndex(e.currentTarget), $(e.currentTarget).data('type')); draw(); });
     host.on('click.gs', '.gs-delblock', (e) => { removeBlock(data, itemIndex(e.currentTarget), Number($(e.currentTarget).closest('.gs-block').data('bi'))); draw(); });
-    host.on('click.gs', '.gs-convert', (e) => { convertItem(data, itemIndex(e.currentTarget)); draw(); });
     host.on('input.gs', '.gs-bf', (e) => {
         const el = $(e.target);
         setBlockField(data, itemIndex(el), Number(el.closest('.gs-block').data('bi')), el.data('field'), e.target.value);
