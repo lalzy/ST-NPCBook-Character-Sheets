@@ -10,10 +10,10 @@ This file describes exactly what the code reads. Everything else is ignored.
 
 1. The box must hold valid JSON. If it doesn't, nothing is saved and you get the parser error.
 2. The object is stored **as you wrote it**, then normalized each time it is used (`src/rules/ruleset.js → normalizeRules`):
-   - **Unknown keys are dropped without a warning.** That includes keys from older examples that the code never reads: `attrCost`, a secondary stat's `cost`, and `sheetXml.relative`.
+   - **Unknown keys are dropped without a warning.** That includes keys from older examples that the code never reads: `attrCost`, a secondary stat's `cost`, and `sheetXml.relative`. `armorCategories` and `gearBonuses` are not used for items: armor and bonuses are set in each item's blocks (see *Items*).
    - Entries that break a rule below (for example a key with a space in it) are dropped one by one, also without a warning.
 3. After saving, these formulas are checked for **syntax only**: every `secondary[].base`, `basicLift`, `dodge`, `parry`, `block`, `armorClass` and `unskilled`. The check doesn't look at names, so a typo like `Stregth` passes the check and only fails when the sheet is computed. These formulas are **not checked at all**: `unarmedLevel`, `resources[].max`, and an ability's `dc`.
-4. A formula that fails at run time (unknown name, bad syntax, division by zero) gives **0** for a secondary stat's base. For every other formula it gives **"not set"**: the sheet shows "—" and that feature switches off.
+4. A formula that fails at run time (unknown name, bad syntax, division by zero) gives **0** for a secondary stat's base. For `resources[].max` and `[bracket]` formulas in item text it gives **0**. For every other formula it gives **"not set"**: the sheet shows "—" and that feature switches off.
 
 Every key is optional. With no rules at all the sheet still works as a plain record: it stores what you type and rolls against any number.
 
@@ -61,7 +61,7 @@ Stats worked out from other stats, computed **in list order**.
 | `key` | Required. Must not be the same as an attribute key, or the entry is dropped. |
 | `label` | Shown on the sheet. Default: `key`. |
 | `base` | Formula. It can use attributes, secondary keys **above** this one, and `HPRolls` (see `hpRoll`). It **cannot** use `lift`, because lift is computed after all secondary stats. |
-| `step` | Default 1. The sheet stores how many steps you clicked up or down, and **value = base + step × clicks**. Use `0.25` for something like Basic Speed. |
+| `step` | Default 1 (`0` also counts as 1). The sheet stores how many steps you clicked up or down, and **value = base + step × clicks**. Use `0.25` for something like Basic Speed. |
 | `roll` | Optional. If set, the stat gets a roll button, and Roll Dice gets a *Checks* rollable with this name. |
 
 There is no point cost. A `cost` field is ignored.
@@ -81,7 +81,7 @@ Tells the code which of your keys does what. Each value must be a key name.
 `health`, `stamina`, `speed` and `move` are read from secondary stats only. If you point one at an attribute, the result is empty.
 
 ### `basicLift` (formula) and `liftUnit` (text)
-`basicLift` can use attributes and secondary stats. Its result is available as **`lift`** to `dodge`, `armorClass`, `unskilled`, `unarmedLevel`, `resources` and ability `dc` formulas. `liftUnit` is printed after the lift and after every item weight, both on the sheet and in the XML.
+`basicLift` can use attributes and secondary stats. Its result is available as **`lift`** to `dodge`, `armorClass`, `unskilled`, `unarmedLevel`, `resources` and ability `dc` formulas. `liftUnit` is printed after the lift and after every item weight on the sheet, and after item weights in the XML (the lift in the XML `<stats>` has no unit).
 
 ### `damageTable` (list of `{ at, thrust, swing }`)
 A row needs a numeric `at` (the old name `st` is also read) and at least one of `thrust` / `swing`. Rows are sorted by `at`. The sheet uses the row with the highest `at` that is at or below the `roles.damage` attribute. **A value below the lowest row uses the lowest row.**
@@ -97,20 +97,17 @@ Dice text is `NdM±K`. A bare `d` means d6, so `1d-2` is 1d6−2. Negative adds 
 - Without `basicLift` there is no encumbrance at all.
 
 ### `dodge` (formula)
-It can use attributes, secondary stats, `lift` and `HPRolls`. The result is **not rounded**, so wrap it in `floor()` if you need a whole number. The encumbrance `dodge` is added. For combat entries the `defenseTraits` bonus is added too. The sheet's own Dodge display and the Roll Dice *Defense → Dodge* rollable don't include that trait bonus.
+It can use attributes, secondary stats, `lift` and `HPRolls` (only when `hpRoll` is set and the rules have at least one secondary stat). The result is **not rounded**, so wrap it in `floor()` if you need a whole number. The encumbrance `dodge` and every active `modifier` block aimed at `dodge` are added. For combat entries the `defenseTraits` bonus is added too. The sheet's own Dodge display and the Roll Dice *Defense → Dodge* rollable don't include that trait bonus.
 
 ### `parry` / `block` (formulas)
-Their **only** variable is `skill`, the level of the weapon or shield. Any other name makes the result empty. The result is rounded down, then the `defenseTraits` and `gearBonuses` bonuses are added.
+Their **only** variable is `skill`, the level of the weapon or shield. Any other name makes the result empty. The result is rounded down, then the `defenseTraits` bonus and the item `modifier` blocks aimed at `parry` / `block` are added.
 
-- A **Parry** is made for every weapon whose category doesn't contain "shield" or "ranged", and for your best unarmed skill.
-- A **Block** is made for every item whose category contains "shield". To add a bonus from gear (a shield's defense bonus, for example), use `gearBonuses`.
-- The skill a weapon or shield rolls with: see *A weapon's level* under "What is fixed in the code".
+- A **Parry** is made once per carried item that has an `attack` block with `use: "melee"`, unless that item also has a `defense` block with `kind: "block"`. Your best unarmed skill (see `unarmedSkills`) also gets a Parry, only when `unarmedAttacks` has at least one entry.
+- A **Block** is made for every `defense` block with `kind: "block"` on an equipped item. The block's `value` is added to it.
+- The skill an attack or block rolls with: see *An item's level* under "What is fixed in the code".
 
 ### `armorClass` (formula)
-It can use attributes, secondary stats, `lift` and **`armor`** (total armor from armor items). The result is rounded down and shown as AC. It is sent as `ac` and used when the game system attacks against a fixed defense.
-
-### `armorCategories` (list of words)
-These words are matched against each item's category, either as the whole category or as one of its words (lower case). If the list is empty, any category containing "armor" or "armour" counts. An item's armor is the first `DR N`, `armor N` or `armour N` in its *stat* text. All counted items add up to `armor` and to the `dr` sent to Combat Mode. If the stat text also says where it is worn, `covers torso, groin` or `covers arms and legs` (up to the next `.` `;` `|` or bracket), each armor item is also sent with those locations, for Combat Mode's armor by hit location (`hitLocations.armor: "location"`).
+It can use attributes, secondary stats, `lift` and **`armor`** (the sum of the `value` of every `defense` block with `kind: "armor"` on equipped items, each plus its item's `item:armor` modifiers, plus `modifier` blocks aimed at `armor`). The result is rounded down, then `modifier` blocks aimed at `armorClass` are added, and it is shown as AC. It is sent as `ac` and used when the game system attacks against a fixed defense.
 
 ### `unskilled` (formula)
 The level for a weapon or ability with no matching skill (rounded down). It can use attributes, secondary stats and `lift`. If it's empty, the `defaultAttr` value is used.
@@ -119,42 +116,22 @@ The level for a weapon or ability with no matching skill (rounded down). It can 
 The level of unarmed attacks when the sheet has **none** of the `unarmedSkills`. If it's empty, the `defaultAttr` value is used. This formula isn't checked when you save.
 
 ### `unarmedAttacks` (list of `{ name, levelMod, damage }`)
-If this list is empty, characters have no unarmed attacks. Each entry is rolled at the unarmed level + `levelMod`. Its `damage` uses the weapon damage grammar below.
+If this list is empty, characters have no unarmed attacks and no unarmed Parry. Each entry is rolled at the unarmed level + `levelMod`. Its `damage` uses the weapon damage grammar below.
 
 ### `unarmedSkills` (list of `{ name, bonus: [{ over, perDie }] }`)
-`name` is matched against skill names exactly (case is ignored), and the highest one on the sheet is used. `over` = that skill's level − the `defaultAttr` value. The bonus with the highest `over` that is reached adds `perDie × (number of thrust dice)` to every unarmed attack whose damage starts with `thr` or `sw`. Swing attacks also count thrust dice. That skill also gets a Parry.
+`name` is matched against skill names exactly (case is ignored), and the highest one on the sheet is used. `over` = that skill's level − the `defaultAttr` value. The bonus with the highest `over` that is reached adds `perDie × (number of thrust dice)` to every unarmed attack whose damage starts with `thr` or `sw`. Swing attacks also count thrust dice. That skill also gets a Parry (only when `unarmedAttacks` isn't empty).
 
 ### `woundMultipliers` (object, type → number) and `defaultDamageType` (text)
 Keys are lower-cased. Types that aren't listed multiply by 1. The keys are also listed to the LLM as the damage-type words it may use. `defaultDamageType` is used when damage text has no type word.
 
 ### `resources` (list of `{ name, max }`)
-What abilities spend (FP, mana, spell slots…). `max` is a formula. The result is rounded down, with a minimum of 0. When more than one resource is set, an ability has a *Paid from* field. If the list is empty there is one resource: the `stamina` stat, named after its label. `max` isn't checked when you save.
+What abilities spend (FP, mana, spell slots…). `max` is a formula. The result is rounded down, with a minimum of 0. A formula that fails gives 0. When more than one resource is set, an ability has a *Paid from* field. If the list is empty there is one resource: the `stamina` stat, named after its label. `max` isn't checked when you save.
 
 ### `hpRoll` (`{ per, dice, first }`)
 HP from dice. One roll of `dice` is made per point of the value of `per`, which must be a key that comes before the secondary stat that uses it. With `first: "max"`, the first roll is the highest the dice can show. Rolls not made yet count as average (`n × (floor(sides/2)+1) + add`). The total is the formula variable **`HPRolls`**.
 
 ### `defenseTraits` (list of `{ name, bonus }`)
-A trait whose name **starts with** `name` (case ignored) adds `bonus` to every Dodge, Parry and Block sent to Roll Dice and Combat. All matching entries add up.
-
-### `gearBonuses` (list of `{ word, categories, adds }`)
-Bonuses that equipment adds to defenses. If the list is empty, gear adds nothing.
-
-| Field | Meaning |
-|---|---|
-| `word` | Required. The word to look for in an item's *stat* text. It must be followed by a number: `DB 2`, `DB+1`, `AC +2`, `DB -1`. Case is ignored, and the word must not be part of a longer word. |
-| `categories` | Optional. Only items whose category is one of these words count (matched like `armorCategories`). Empty means any item. |
-| `adds` | Required. Which values get the bonus: `dodge`, `parry`, `block` and/or `armorClass`. Anything else is dropped, and an entry with nothing left in `adds` is dropped. |
-
-Every matching item adds its number, and all entries add up. The bonus is added after the `dodge` / `parry` / `block` / `armorClass` formula, together with the encumbrance and trait bonuses. It shows on the sheet (Dodge, AC) and in what Roll Dice and Combat Mode receive.
-
-```json
-"gearBonuses": [ { "word": "DB", "categories": ["shield"], "adds": ["dodge", "parry", "block"] } ]
-```
-→ A shield with stat `DB 2` gives +2 to Dodge, every Parry and Block.
-```json
-"gearBonuses": [ { "word": "AC", "adds": ["armorClass"] } ]
-```
-→ A shield with stat `AC +2` and a ring with `AC +1` add 3 to AC.
+A trait whose name **starts with** `name` (case ignored) adds `bonus` to every Dodge, Parry and Block in the combat entries sent to Combat Mode. It is not added to the sheet's Dodge or to the Roll Dice *Defense → Dodge* rollable. All matching entries add up.
 
 ### `skillCosts` (list of `{ pts, level }`), `skillCostEach` (`{ pts, level }`) and `skillDifficulties` (list of `{ name, base }`)
 Skill points turned into levels. If `skillCosts` is empty (the default), skill levels are typed in.
@@ -178,9 +155,7 @@ With a table, each skill row gets a **Pts** field (and a **Diff** dropdown when 
 The skill an item of that category uses when its *skill* field is empty (or names a skill the sheet doesn't have) and no skill is named like the item. Example: `[ { "category": "buckler", "skill": "Buckler Use" } ]`.
 
 ### `itemPresets` (list of `{ name, category, qty, effect, blocks }`)
-Your rule set's **New item** buttons in the inventory. Each preset makes an item that already has these blocks; the user then fills in or changes anything. Block `type` is `attack`, `defense`, `modifier`, `ability`, `charges` or `consumes`, with the same fields the inventory shows (for example `label`, `roll` (`skill` / `fixed`), `skill`, `level`, `damage`, `use` (`melee` / `ranged` / `utility`), `range`; `kind` (`armor` / `block`), `value`, `slots`; `amount`, `target`, `when`; `from` (`item` / `pool`), `item`, `pool`, `per`). Unknown block types are dropped.
-
-`damage` can use `sw` / `thr` (from `damageTable`) and formulas in square brackets, worked out from the character: `1d8+[floor((Str-10)/2)]`. A `level` with `roll: "fixed"` is a number or formula, e.g. `floor((Str-10)/2)+Prof`. A melee attack gets a Parry from the `parry` formula.
+Your rule set's **New item** buttons in the inventory. `name` is the button's label only: the new item has no name until the user types one, and an item without a name isn't used or sent anywhere. `category` (a label only, it changes nothing), `qty` and `effect` are copied onto the item. `blocks` are the item's blocks (see *Items* below). A block with an unknown `type` is dropped. Fields left out get the defaults listed there.
 
 ```json
 "itemPresets": [
@@ -188,9 +163,26 @@ Your rule set's **New item** buttons in the inventory. Each preset makes an item
     { "type": "attack", "label": "Swing", "use": "melee", "damage": "sw+0 cut" },
     { "type": "attack", "label": "Thrust", "use": "melee", "damage": "thr+0 imp" } ] },
   { "name": "Weapon", "category": "weapon", "blocks": [
-    { "type": "attack", "roll": "fixed", "level": "floor((Str-10)/2)+Prof", "use": "melee", "damage": "1d8+[floor((Str-10)/2)]" } ] }
+    { "type": "attack", "roll": "fixed", "level": "floor((Str-10)/2)+Prof", "use": "melee", "damage": "1d8+[floor((Str-10)/2)]" } ] },
+  { "name": "Shield", "category": "shield", "blocks": [
+    { "type": "defense", "kind": "block", "value": 1 },
+    { "type": "modifier", "target": "dodge", "amount": 1, "when": "equipped" } ] },
+  { "name": "Breastplate", "category": "armor", "blocks": [
+    { "type": "defense", "kind": "armor", "value": 4, "slots": "torso" } ] }
 ]
 ```
+
+### Items: blocks
+Every item is made of blocks. Each block is optional and can be repeated. Item fields: `name`, `qty` (default 1; 0 = not carried), `weight`, `value`, `category` (label only), `equipped` (default true), `effect` (text for the LLM; macros allowed), `blocks`.
+
+| Block `type` | Fields (default) |
+|---|---|
+| `attack` | `label`; `roll`: `skill` (default) or `fixed`; `skill`: a skill name, an attribute key or a secondary key; `level`: number or formula, used with `roll: "fixed"`; `damage`: damage text (grammar below; `sw` / `thr` from `damageTable`; `[formula]` parts are worked out from the character, e.g. `1d8+[floor((Str-10)/2)]`); `use`: `melee` (default), `ranged` or `utility`; `range`: yards (for melee: reach, default 1); `hits`: `roll` (default) or `auto` (always hits, no roll or defense). Counts while the item is carried. |
+| `defense` | `kind`: `armor` (default) or `block`. For `armor`: `value` = armor points, `slots` = where it is worn, a comma list (`"torso, arms"`; empty or `all` = everywhere). For `block`: `value` = bonus added to the Block, `skill` = what it rolls with (as for `attack`). Counts only while the item is equipped. |
+| `modifier` | `amount`: a number; `target`: `item:attack`, `item:damage`, `item:both`, `item:armor`, `item:block` (this item only), `attack`, `damage`, `armor`, `dodge`, `parry`, `block`, `armorClass` (everything), `attr:<attribute key>`, `sec:<secondary key>`, `skill:<skill name>`; `when`: `equipped` (default), `carried` or `always`. |
+| `ability` | The ability fields listed under *Abilities* below, plus `roll`: `fixed` (default) or `skill`, and `level` (number or formula, used with `roll: "fixed"`). `resource: "charges:<name>"` pays the cost from this item's `charges` block of that name. Counts while the item is equipped. |
+| `charges` | `name` (default `Charges`); `left` (empty = unlimited); `max`. |
+| `consumes` | `from`: `item` (default) or `pool`; `item`: the name of another inventory item (arrows…); `pool`: a resource name (FP, mana, HP…); `per`: amount used per attack (default 1). An attack whose ammo has run out is not offered. |
 
 ### `macros` (list of definitions): home-brew macros
 What a `{{name}}` written in trait or item text does, for example `{{haste}}` (actions doubled) or `{{immunity cold}}` (immune to attacks with the keyword `cold`). The sheet only finds the macros and sends them, with these definitions, to Roll Dice. **Combat Mode applies them.** The fields (`name`, `aliases`, `params`, `defaults`, `text`, `actions`, `actionsTimes`, `immune`, `damageTaken`, `mods`, `only`, `phase`, `body`, `pools`, and the attack fields `area`, `frag`, `push`, `scale`, `deliver`…) are described in NPC-Book-Combat/RULES.md → `macros`. A definition in Combat's rules pack with the same name wins over one here.
@@ -213,28 +205,28 @@ Entries are stored as written. Only entries without a valid `name` (a letter fir
 ## What is fixed in the code (not configurable)
 
 - **Skill levels** are typed in, unless the rules have a `skillCosts` table (see above). Without one, a skill's *Attr* dropdown is a label only.
-- **What counts as a weapon:** an item whose category contains `weapon`, `shield`, `ranged` or `melee`. A category containing `ranged` makes it ranged, with no parry.
-- **A weapon's level** comes from the first skill on the sheet that matches, in this order: its *skill* field; a skill named exactly like the item; `categorySkills` for its category; a skill named like a word of its category (category "shield" → skill "Shield"); a skill named like a word of its name ("Kite Shield" → "Shield"). With no match it uses `unskilled`.
-- **Weapon damage grammar** (item *stat* and ability *damage*):
-  - `thr` / `thrust` / `sw` / `swing` / `NdM`, then optional `±N` terms and extra dice of other sizes, then one type word: `sw+1 cut`, `thr-1 cr`, `2d+1 pi+`, `1d8+2d6+3 fire`.
+- **What counts as a weapon:** an item with an `attack` block. The category changes nothing.
+- **An item's level** (attack or block): with `roll: "fixed"`, the block's `level`. Otherwise the block's `skill` if it is an attribute or secondary key; else the first skill on the sheet that matches, in this order: the block's `skill`; a skill named exactly like the item; `categorySkills` for its category; a skill named like a word of its category; a skill named like a word of its name ("Kite Shield" → "Shield"). With no match it uses `unskilled`.
+- **Damage grammar** (attack block `damage` and ability `damage`):
+  - `thr` / `thrust` / `sw` / `swing` / `NdM`, then optional `±N` terms and extra dice of other sizes, then one type word: `sw+1 cut`, `thr-1 cr`, `2d+1 pi+`, `1d8+2d6+3 fire`. A subtracted dice term (`-1d6`) is ignored.
   - A plain number is flat damage: `5`, `3 fire`.
   - An armor divisor in brackets after the type, `2d cut (2)` or `1d pi (0.5)`, is sent with the damage as `div` (Combat Mode uses it when `armorDivisors` is on).
   - The type word is any lower-case letters, `+` or `-` (`pi++`, `pi-`). Only the first type word is read.
 - **Abilities**: these fields are set on the sheet, not in the rules.
   - `use` is ranged, melee or utility.
   - `fx` is damage, heal, fp, buff, debuff, stun, disarm, haste, poison, bleed or none.
-  - `on` is enemy, ally, self or any.
+  - `aim` is enemy, ally, self or any.
   - `stat` is attack, defense, skill, resist, dr, move or all.
-  - The other fields are `mod`, `turns` (default 3, or 1 for stun), `resist` (an attribute or secondary key), `dc`, `save` (none or half), `castTime`, `hits` (roll or auto), `defendWith`, `cost` and `resource`.
-  - The ability's level is its *skill* field: an attribute or secondary key, or a skill name. Else a skill named like the ability, else `unskilled`.
-- **Macros** in trait, item or ability text: `{{name}}`, `{{name arg}}`, `{{name arg1 arg2}}`, `{{name:arg}}` or `{{name a, b}}`. Name, item stat, ability kind and effect text are searched. A macro is sent with `from` = the trait, item or ability it was written on, so its attack fields apply to that attack or ability. What they do comes from `macros` (above) and Combat Mode's rules pack; only `{{extra-turn}}` / `{{extra-turn:N}}` is built in.
+  - The other fields are `name`, `kind`, `skill`, `damage`, `range`, `effect`, `duration` (turns; default 3, or 1 for stun), `mod` (0 or empty = +2 for buff, −2 for debuff, 1 for haste), `resist` (an attribute or secondary key), `dc`, `save` (none or half), `castTime`, `hits` (roll or auto), `defendWith`, `cost` and `resource`.
+  - The ability's level: a *skill* field that is an attribute or secondary key gives that value; one that names a skill on the sheet gives its level; one that names anything else gives `unskilled`. Only an empty *skill* field tries a skill named like the ability first, then `unskilled`.
+- **Macros** in trait, item or ability text: `{{name}}`, `{{name arg}}`, `{{name arg1 arg2}}`, `{{name:arg}}`, `{{name=arg}}` or `{{name a, b}}`. Searched: a trait's name and effect; an item's name and effect; an ability's (or ability block's) name, kind and effect. A macro is sent with `from` = the trait, item or ability it was written on, so its attack fields apply to that attack or ability. What they do comes from `macros` (above) and Combat Mode's rules pack; only `{{extra-turn}}` / `{{extra-turn:N}}` is built in.
 
 ---
 
 ## What other extensions receive
 
 The sheet registers with Roll Dice. For each enabled sheet it sends:
-`{ key, name, rollables, combat, dr, hp (health role), fp (stamina role), move, speed (speed role), ac, attrs (every attribute, every secondary stat and lift, under their keys), resources, macros ([{ name, arg, args, from }]), macroDefs (the rules' macros), armor ([{ name, dr, covers }]: each counted armor item and the locations its stat text says it covers) }`.
+`{ key, name, rollables, combat, dr, hp (health role), fp (stamina role), move, speed (speed role), ac, attrs (every attribute, every secondary stat and lift, under their keys), resources, macros ([{ name, arg, args, from }]), macroDefs (the rules' macros), armor ([{ name, dr, covers }]: each armor `defense` block of an equipped item, with its `slots`) }`.
 Combat Mode finds attributes by these **keys**. For Combat's free-form checks and resistance rolls (strength, agility, will…), the Roll Dice game system pack has to name your keys under `stats`. See RollDice/RULES.md.
 
 ---
