@@ -6,6 +6,7 @@ import { onChatChoiceChange } from './src/chat/generation.js';
 import { mountSettings, renderChatState } from './src/ui/settings/index.js';
 import { initRollDice } from './src/integrations/rollDice/index.js';
 import { initNpcBook } from './src/integrations/npcBook/index.js';
+import { exposeSheetApi } from './src/integrations/sheetApi.js';
 
 jQuery(() => {
     settings();
@@ -16,4 +17,5 @@ jQuery(() => {
     const { eventSource, eventTypes } = ctx();
     eventSource.on(eventTypes.CHAT_CHANGED, renderChatState);
     initNpcBook();
+    exposeSheetApi(); // window.NPCBookSheet: held equipment for Combat Mode
 });

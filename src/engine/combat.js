@@ -101,7 +101,7 @@ function weaponActions(sh, c, skillLevel, defBonus) {
             if (b.use === 'melee' && !parried && !blocksDef.length && level !== null) {
                 parried = true;
                 const t = defense(R.parry, level, defBonus + gear.parry);
-                if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: `Parry (${name})`, target: t, item: name });
+                if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: `Parry (${name})`, target: t, item: name, def: 'parry' });
             }
         });
         if (isEquipped(w)) {
@@ -109,7 +109,7 @@ function weaponActions(sh, c, skillLevel, defBonus) {
                 const { level } = itemLevel(b, w, c);
                 if (level === null) return;
                 const t = defense(R.block, level, defBonus + gear.block + num(b.value) + modSum(mods, 'item:block', i));
-                if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: blocksDef.length > 1 ? `Block ${k + 1} (${name})` : `Block (${name})`, target: t, item: name });
+                if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: blocksDef.length > 1 ? `Block ${k + 1} (${name})` : `Block (${name})`, target: t, item: name, def: 'block' });
             });
         }
     });
@@ -130,7 +130,7 @@ function unarmedActions(c, skillLevel, defBonus) {
     const perDie = ua ? (ua.bonus.find(b => over >= b.over)?.perDie ?? 0) : 0;
     const actions = [];
     for (const atk of R.unarmedAttacks) {
-        actions.push({ group: 'Attack', kind: 'roll', name: atk.name, target: baseLvl + atk.levelMod, note: `${ua ? ua.name : fromRule !== null ? R.unarmedLevel : da}${atk.levelMod ? (atk.levelMod > 0 ? `+${atk.levelMod}` : atk.levelMod) : ''}` });
+        actions.push({ group: 'Attack', kind: 'roll', name: atk.name, unarmed: true, target: baseLvl + atk.levelMod, note: `${ua ? ua.name : fromRule !== null ? R.unarmedLevel : da}${atk.levelMod ? (atk.levelMod > 0 ? `+${atk.levelMod}` : atk.levelMod) : ''}` });
         const dmg = weaponDamage(atk.damage, c.thrust, c.swing);
         if (dmg) {
             const bonus = /^(thr|sw)/i.test(atk.damage) && thr ? perDie * thr.n : 0;
@@ -139,7 +139,7 @@ function unarmedActions(c, skillLevel, defBonus) {
     }
     if (ua) {
         const t = defense(R.parry, ua.lvl, defBonus + (c.gear?.parry || 0));
-        if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: `Parry (${ua.name})`, target: t });
+        if (t !== null) actions.push({ group: 'Defense', kind: 'roll', name: `Parry (${ua.name})`, target: t, def: 'parry' });
     }
     return actions;
 }
@@ -201,7 +201,7 @@ export function combatActions(sheet) {
         ...weaponActions(sh, c, skillLevel, defBonus),
         ...unarmedActions(c, skillLevel, defBonus),
         ...abilityActions(c),
-        ...(c.dodge !== null ? [{ group: 'Defense', kind: 'roll', name: 'Dodge', target: c.dodge + defBonus }] : []),
+        ...(c.dodge !== null ? [{ group: 'Defense', kind: 'roll', name: 'Dodge', target: c.dodge + defBonus, def: 'dodge' }] : []),
         ...skillActions(c),
     ];
 }

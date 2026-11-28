@@ -15,6 +15,8 @@ This file describes exactly what the code reads. Everything else is ignored.
 3. After saving, these formulas are checked for **syntax only**: every `secondary[].base`, `basicLift`, `dodge`, `parry`, `block`, `armorClass` and `unskilled`. The check doesn't look at names, so a typo like `Stregth` passes the check and only fails when the sheet is computed. These formulas are **not checked at all**: `unarmedLevel`, `resources[].max`, and an ability's `dc`.
 4. A formula that fails at run time (unknown name, bad syntax, division by zero) gives **0** for a secondary stat's base. For `resources[].max` and `[bracket]` formulas in item text it gives **0**. For every other formula it gives **"not set"**: the sheet shows "—" and that feature switches off.
 
+Only the active template's name (an internal id made from it) is kept in the settings. **Built-in templates are never stored**: they are read from the extension's code each time it loads, so an update to *Generic (default)* reaches you with the extension. Your own templates are stored, and the active one is read by its id. Picking another template loads it into the sheet at once.
+
 Every key is optional. With no rules at all the sheet still works as a plain record: it stores what you type and rolls against any number.
 
 ---
@@ -154,17 +156,41 @@ With a table, each skill row gets a **Pts** field (and a **Diff** dropdown when 
 ### `categorySkills` (list of `{ category, skill }`)
 The skill an item of that category uses when its *skill* field is empty (or names a skill the sheet doesn't have) and no skill is named like the item. Example: `[ { "category": "buckler", "skill": "Buckler Use" } ]`.
 
-### `itemPresets` (list of `{ name, category, qty, effect, blocks }`)
-Your rule set's **New item** buttons in the inventory. `name` is the button's label only: the new item has no name until the user types one, and an item without a name isn't used or sent anywhere. `category` (a label only, it changes nothing), `qty` and `effect` are copied onto the item. `blocks` are the item's blocks (see *Items* below). A block with an unknown `type` is dropped. Fields left out get the defaults listed there.
+### `hands` (`{ primary, off, handedness }`)
+The two hand slots of the **Equipment** tab: a primary hand and an off-hand. The off-hand holds a one-handed item; a two-handed item takes both. What each hand is called, and whether there is a handedness choice, are yours. Nothing is enforced: they are labels.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `primary` | `"Primary hand"` | The primary hand's name. |
+| `off` | `"Off-hand"` | The off-hand's name. |
+| `handedness` | `[]` | `[{ name, primary, off }]`: choices shown on the Equipment tab (right-handed, left-handed…). The one picked names the hands with its `primary` / `off`. Empty: no choice, the hands are always `primary` / `off`. |
+
+With a handedness system, the off-hand is the non-dominant hand:
+```json
+"hands": { "handedness": [
+  { "name": "Right-handed", "primary": "Right hand", "off": "Left hand" },
+  { "name": "Left-handed", "primary": "Left hand", "off": "Right hand" } ] }
+```
+Without one, the rules say which hand is the off-hand:
+```json
+"hands": { "primary": "Right hand", "off": "Off-hand (left)" }
+```
+
+### `itemPresets` (list of `{ name, category, qty, effect, hands, blocks }`)
+Your rule set's **New item** buttons in the inventory. `name` is the button's label only: the new item has no name until the user types one, and an item without a name isn't used or sent anywhere. `category` (a label only, it changes nothing), `qty`, `effect` and `hands` (1 or 2) are copied onto the item. `blocks` are the item's blocks (see *Items* below). A block with an unknown `type` is dropped. Fields left out get the defaults listed there.
 
 ```json
 "itemPresets": [
-  { "name": "Melee weapon", "category": "weapon", "blocks": [
+  { "name": "Melee weapon", "category": "weapon", "hands": 1, "blocks": [
     { "type": "attack", "label": "Swing", "use": "melee", "damage": "sw+0 cut" },
     { "type": "attack", "label": "Thrust", "use": "melee", "damage": "thr+0 imp" } ] },
   { "name": "Weapon", "category": "weapon", "blocks": [
     { "type": "attack", "roll": "fixed", "level": "floor((Str-10)/2)+Prof", "use": "melee", "damage": "1d8+[floor((Str-10)/2)]" } ] },
-  { "name": "Shield", "category": "shield", "blocks": [
+  { "name": "Two-handed weapon", "category": "weapon", "hands": 2, "blocks": [
+    { "type": "attack", "label": "Swing", "use": "melee", "damage": "sw+2 cut" } ] },
+  { "name": "Bow", "category": "weapon", "hands": 2, "blocks": [
+    { "type": "attack", "use": "ranged", "range": 150, "damage": "thr+1 imp" } ] },
+  { "name": "Shield", "category": "shield", "hands": 1, "blocks": [
     { "type": "defense", "kind": "block", "value": 1 },
     { "type": "modifier", "target": "dodge", "amount": 1, "when": "equipped" } ] },
   { "name": "Breastplate", "category": "armor", "blocks": [
@@ -173,7 +199,22 @@ Your rule set's **New item** buttons in the inventory. `name` is the button's la
 ```
 
 ### Items: blocks
-Every item is made of blocks. Each block is optional and can be repeated. Item fields: `name`, `qty` (default 1; 0 = not carried), `weight`, `value`, `category` (label only), `equipped` (default true), `effect` (text for the LLM; macros allowed), `blocks`.
+Every item is made of blocks. Each block is optional and can be repeated. Item fields: `name`, `qty` (default 1; 0 = not carried), `weight`, `value`, `category` (label only), `equipped` (default true), `hands` (1 or 2: how many hands it takes to hold; empty = 1; set per item in the inventory's *Hands* field, so a crossbow can be either), `effect` (the item's **notes**: text for the LLM; `{{macros}}` allowed), `effects` (the item's **Effects** field: rule effects, see *Effects*), `blocks`. Attack and ability blocks have their own `effects` too.
+
+### The Equipment tab (what is in hand)
+A tab on the character's card in NPC Book's scene (the in-scene card, for NPCs and for you), separate from the outfit. It has one dropdown per hand (named by `hands`), and a handedness choice when the rules have one. Every carried item can go in the primary hand; the off-hand takes one-handed items only, and is empty while a two-handed item is held. One item can't be in both hands unless there are two of it (`qty` 2+). It is stored on the sheet as `held: { primary, off }` (item names) and `handedness`.
+
+Only what is in hand can attack or parry in Combat Mode (with its `held.hands` rule): a shield blocks only in hand, and a dagger in the backpack can't be used until it is readied. Combat Mode reads `held` when a fight starts, and writes it back when the fight ends.
+
+A character the LLM makes (Bestiary, new NPC) can say what it holds: an item with `"held": "primary"` or `"held": "off"`, and `"hands": 2` for a two-handed one.
+```json
+"equipment": [
+  { "name": "Shortsword", "hands": 1, "held": "primary", "damage": "sw+0 cut" },
+  { "name": "Shield", "hands": 1, "held": "off" },
+  { "name": "Dagger", "hands": 1 }
+]
+```
+→ Shortsword in the primary hand, shield in the off-hand, the dagger carried but not held.
 
 | Block `type` | Fields (default) |
 |---|---|
@@ -184,10 +225,23 @@ Every item is made of blocks. Each block is optional and can be repeated. Item f
 | `charges` | `name` (default `Charges`); `left` (empty = unlimited); `max`. |
 | `consumes` | `from`: `item` (default) or `pool`; `item`: the name of another inventory item (arrows…); `pool`: a resource name (FP, mana, HP…); `per`: amount used per attack (default 1). An attack whose ammo has run out is not offered. |
 
-### `macros` (list of definitions): home-brew macros
-What a `{{name}}` written in trait or item text does, for example `{{haste}}` (actions doubled) or `{{immunity cold}}` (immune to attacks with the keyword `cold`). The sheet only finds the macros and sends them, with these definitions, to Roll Dice. **Combat Mode applies them.** The fields (`name`, `aliases`, `params`, `defaults`, `text`, `actions`, `actionsTimes`, `immune`, `damageTaken`, `mods`, `only`, `phase`, `body`, `pools`, and the attack fields `area`, `frag`, `push`, `scale`, `deliver`…) are described in NPC-Book-Combat/RULES.md → `macros`. A definition in Combat's rules pack with the same name wins over one here.
+### Effects (what a row does by rule)
+Traits, items, item attack and ability blocks, and abilities each have an optional **Effects** field (`effects`): the names of effects your rules define (`macros` here or in Combat Mode's rules), with their arguments. One per line or separated by `;`: `name arg1 arg2` or `name: one argument with spaces`. A `{{name arg}}` in a row's **notes** (`effect`) counts the same.
 
-Entries are stored as written. Only entries without a valid `name` (a letter first, then letters, digits and `-`) are dropped. When there are definitions, the LLM is told it may put them in a new character's trait notes.
+**Only these two places count. A name never does anything**: an item called "Sword of Attack" gives no extra attack and a "Longsword of Fire" does no fire damage, unless its Effects say so. **Effects are optional**: a row can have none and only notes, which the LLM reads (a *Wish* spell: no effects, notes "The caster summons a genie who grants one wish."). Plain words in notes are never keywords for Combat Mode; only effects are.
+
+Where an effect is written decides what it applies to (Combat Mode): on a **trait** or an **item**, the character as a whole (and that item's attacks); on an **ability** or an item's **attack block**, only that ability or attack.
+```json
+"traits": [{ "name": "Snow-born", "effects": "immunity cold" }],
+"equipment": [{ "name": "Longsword", "effects": "", "blocks": [{ "type": "attack", "label": "Swing", "damage": "sw+1 cut", "effects": "fire-damage 1d6" }] }],
+"abilities": [{ "name": "Fireball", "effects": "fire; area 5" }, { "name": "Wish", "effect": "The caster summons a genie who grants one wish." }]
+```
+→ Immune to cold; the longsword's swing does +1d6 fire (keyword `fire-damage`); Fireball has the keyword `fire` and a 5 yd area; Wish does nothing by rule and is narrated.
+
+### `macros` (list of definitions): home-brew macros
+What an effect (an Effects entry, or a `{{name}}` in notes) does, for example `{{haste}}` (actions doubled) or `{{immunity cold}}` (immune to attacks with the keyword `cold`). The sheet only finds the macros and sends them, with these definitions, to Roll Dice. **Combat Mode applies them.** The fields (`name`, `aliases`, `params`, `defaults`, `text`, `actions`, `actionsTimes`, `immune`, `damageTaken`, `mods`, `only`, `phase`, `body`, `pools`, `on` (triggers: reactions and home-brew callbacks), and the attack fields `area`, `frag`, `push`, `scale`, `deliver`…) are described in NPC-Book-Combat/RULES.md → `macros`. A definition in Combat's rules pack with the same name wins over one here.
+
+Entries are stored as written. Only entries without a valid `name` (a letter first, then letters, digits and `-`) are dropped. When there are definitions, the LLM is told it may put them in a new character's `effects` fields, and that names do nothing by themselves.
 ```json
 "macros": [
   { "name": "haste", "params": ["times"], "defaults": { "times": "2" }, "text": "actions x{times}", "actionsTimes": "{TIMES}" },
@@ -226,7 +280,14 @@ Entries are stored as written. Only entries without a valid `name` (a letter fir
 ## What other extensions receive
 
 The sheet registers with Roll Dice. For each enabled sheet it sends:
-`{ key, name, rollables, combat, dr, hp (health role), fp (stamina role), move, speed (speed role), ac, attrs (every attribute, every secondary stat and lift, under their keys), resources, macros ([{ name, arg, args, from }]), macroDefs (the rules' macros), armor ([{ name, dr, covers }]: each armor `defense` block of an equipped item, with its `slots`) }`.
+`{ key, name, rollables, combat, dr, hp (health role), fp (stamina role), move, speed (speed role), ac, attrs (every attribute, every secondary stat and lift, under their keys), resources, macros ([{ name, arg, args, from, row }]: every Effects entry and notes `{{macro}}`; `from` = the trait, item, ability or attack it is written on, as sent in `combat` (an attack block: "Longsword Swing"; an item's ability: "Fireball (Oak wand)"); `row` = `trait` · `item` · `ability` · `attack`), macroDefs (the rules' macros), armor ([{ name, dr, covers }]: each armor `defense` block of an equipped item, with its `slots`), held ({ primary, off }: the Equipment tab's items), hands ({ primary, off }: what the hands are called), holdable ([{ name, hands }]: every carried item and the hands it takes), posture (the character's live posture in NPC Book's scene: Standing, Lying down…) }`. Each `combat` entry from an item has its `item`; defenses have their kind (`def`: `parry`, `block`, `dodge`) and unarmed attacks `unarmed: true`.
+
+**`window.NPCBookSheet`** (after the event `npcbooksheet:ready`): what other extensions may read and change on a scene character's sheet. `key` is `'user'` or an NPC Book instance id (as in the entries above).
+- `getHeld(key)` → `{ primary, off, twoHanded, labels: { primary, off }, items: [{ name, hands }] }`, or null.
+- `setHeld(key, { primary, off })` puts items in hands (names; `''` = empty; left out = unchanged), with the same checks as the tab, and stores it. Returns the new `held`, or null.
+```js
+window.NPCBookSheet.setHeld('user', { primary: 'Dagger' });
+```
 Combat Mode finds attributes by these **keys**. For Combat's free-form checks and resistance rolls (strength, agility, will…), the Roll Dice game system pack has to name your keys under `stats`. See RollDice/RULES.md.
 
 ---

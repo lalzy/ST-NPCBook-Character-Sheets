@@ -42,6 +42,9 @@ export const EMPTY_RULES = Object.freeze({
                              // (e.g. a melee weapon with swing + thrust attacks); damage / level fields may use formulas in [brackets]
     macros: [],              // home-brew macros: what {{name args}} in trait / item text does. [{ name, aliases, params, defaults, text,
                              // actions, actionsTimes, immune, damageTaken, mods }]. Sent with each character; Combat Mode applies them
+    hands: { primary: '', off: '', handedness: [] }, // the Equipment tab's hands: names of the primary hand and the off-hand
+                             // ('' = "Primary hand" / "Off-hand"); handedness: [{ name, primary, off }] = a choice per character
+                             // (e.g. right- / left-handed) that names its hands. Labels only: nothing is enforced
 });
 
 /** Structure-only starter: the common keys with no numbers or formulas. The user fills in the values. */
@@ -81,6 +84,7 @@ const plainObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
 /** Item presets: kept as written (block fields are the sheet's own); entries without a name and unknown block types are dropped. */
 const itemPresets = (v) => arr(v).filter(x => plainObj(x) && str(x.name)).map(x => ({
     name: str(x.name), category: str(x.category), ...(nOrNull(x.qty) !== null ? { qty: Number(x.qty) } : {}),
+    ...([1, 2].includes(Number(x.hands)) ? { hands: Number(x.hands) } : {}),
     ...(str(x.effect) ? { effect: str(x.effect) } : {}),
     blocks: arr(x.blocks).filter(b => plainObj(b) && PRESET_BLOCKS.includes(str(b.type))).map(b => ({ ...JSON.parse(JSON.stringify(b)), type: str(b.type) })),
 }));
@@ -140,6 +144,11 @@ export function normalizeRules(r) {
         roles,
         itemPresets: itemPresets(o.itemPresets),
         macros: macroDefs(o.macros),
+        hands: {
+            primary: str(o.hands?.primary) || 'Primary hand',
+            off: str(o.hands?.off) || 'Off-hand',
+            handedness: arr(o.hands?.handedness).filter(x => plainObj(x) && str(x.name)).map(x => ({ name: str(x.name), primary: str(x.primary), off: str(x.off) })),
+        },
     };
 }
 

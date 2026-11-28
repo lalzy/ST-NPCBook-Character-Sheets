@@ -5,10 +5,10 @@ export const MODULE = 'NPC_Book_character_sheet';
 export const EXT_ID = 'NPC_Book_character_sheet';
 export const TITLE = 'NPC Book - Character Sheet';
 
-import { GENERIC_RULES } from '../rules/generic.js';
 
 /** New installs start with the generic rule set (Settings → Rules: pick another template or edit it). */
-export const DEFAULTS = { enabled: true, sendXml: true, generateForNew: true, rules: JSON.parse(JSON.stringify(GENERIC_RULES)) };
+// rules: only the active template's id is stored (rulesTemplates); the rules are read by it (core/context.js activeRules)
+export const DEFAULTS = { enabled: true, sendXml: true, generateForNew: true };
 
 /** Suggested inventory categories (datalist). */
 export const CATEGORIES = ['weapon', 'armor', 'shield', 'clothing', 'tool', 'supplies', 'valuable', 'consumable', 'misc'];

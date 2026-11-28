@@ -3,6 +3,7 @@
 import { ABILITY_USES, ABILITY_FX, ABILITY_AIMS, ABILITY_STATS, resistAttrs } from './rules.js';
 import { attrKeys, defaultAttr, skillAttrs } from '../rules/ruleset.js';
 import { defaultSheet } from './sheet.js';
+import { setHeld } from './held.js';
 import { itemFromText } from './items.js';
 import { num } from '../utils/number.js';
 
@@ -23,13 +24,16 @@ function addSkills(sh, g) {
 function addTraits(sh, g) {
     const traits = Array.isArray(g.traits) ? g.traits : Object.entries(g.traits || {});
     for (const row of traits) {
-        let name; let effect = '';
+        let name; let effect = ''; let effects = '';
         if (typeof row === 'string') name = row;
         else if (Array.isArray(row)) { name = row[0]; effect = row.slice(1).find(x => typeof x === 'string') ?? ''; }
-        else { name = row?.name; effect = row?.effect ?? ''; }
-        if (name) sh.traits.push({ name: String(name), effect: effect ? String(effect) : '' });
+        else { name = row?.name; effect = row?.effect ?? row?.notes ?? ''; effects = effectsText(row?.effects); }
+        if (name) sh.traits.push({ name: String(name), effect: effect ? String(effect) : '', ...(effects ? { effects } : {}) });
     }
 }
+
+/** An `effects` value (a list or text) as the sheet stores it: "name args; name args". */
+const effectsText = (v) => (Array.isArray(v) ? v.map(x => String(x ?? '').trim()).filter(Boolean).join('; ') : String(v ?? '').trim());
 
 const digits = (v) => num(String(v ?? '').replace(/[^\d.]/g, ''));
 
@@ -42,7 +46,14 @@ function addEquipment(sh, g) {
             sh.equipment.push(itemFromText({
                 name: String(it.name), qty: num(it.qty, 1) || 1, weight: digits(it.weight), value: digits(it.value),
                 category: String(it.category ?? ''), stat, skill: String(it.skill ?? ''), effect: String(it.effect ?? ''),
+                ...([1, 2].includes(Number(it.hands)) ? { hands: Number(it.hands) } : {}),
             }));
+            const fx = effectsText(it.effects);
+            if (fx) sh.equipment[sh.equipment.length - 1].effects = fx;
+            // "held": "primary" / "off" (or true = the primary hand): what it has in hand when we meet it
+            const h = String(it.held ?? '').trim().toLowerCase();
+            if (h === 'primary' || h === 'true' || h === 'main' || h === 'yes') sh.held.primary = sh.held.primary || String(it.name);
+            else if (h === 'off' || h === 'offhand' || h === 'off-hand') sh.held.off = sh.held.off || String(it.name);
         }
     }
 }
@@ -63,7 +74,7 @@ function addAbilities(sh, g) {
             fx, aim: ABILITY_AIMS.includes(aim) ? aim : '',
             skill: String(row.skill ?? ''), damage: String(row.damage ?? row.amount ?? ''),
             stat: ABILITY_STATS.includes(stat) ? stat : '', mod: num(row.mod), duration: digits(row.turns ?? row.duration), resist,
-            range: digits(row.range ?? row.reach), cost: digits(row.fp ?? row.cost), effect: String(row.effect ?? ''),
+            range: digits(row.range ?? row.reach), cost: digits(row.fp ?? row.cost), effect: String(row.effect ?? row.notes ?? ''), effects: effectsText(row.effects),
             dc: row.dc === undefined || row.dc === null ? '' : String(row.dc), save: String(row.save ?? '').toLowerCase() === 'half' ? 'half' : 'none',
             resource: String(row.resource ?? ''), defendWith: String(row.defendWith ?? row.defended_by ?? ''),
             castTime: digits(row.castTime ?? row.cast_time), hits: /^(auto|yes|true|always)/i.test(String(row.hits ?? row.always_hits ?? '')) ? 'auto' : 'roll',
@@ -85,5 +96,6 @@ export function sheetFromLLM(g) {
     addTraits(sh, g);
     addEquipment(sh, g);
     addAbilities(sh, g);
+    setHeld(sh, sh.held); // drops a held item the sheet doesn't carry, or an off-hand next to a two-handed one
     return sh;
 }

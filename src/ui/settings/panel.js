@@ -5,8 +5,8 @@ import { num } from '../../utils/number.js';
 import { chatChoice, generateInChat, setChatChoice } from '../../chat/generation.js';
 import { BLANK_TEMPLATE, normalizeRules, formulaError } from '../../engine/index.js';
 import { settingsHtml } from './template.js';
-import { GENERIC_RULES } from '../../rules/generic.js';
-import { mountRulesTemplates, isTemplateStore, newStore } from '../rulesTemplates.js';
+import { BUILT_INS } from '../../core/builtins.js';
+import { mountRulesTemplates } from '../rulesTemplates.js';
 
 /** The settings panel line for the open chat: its sheet setting and where it comes from. */
 export function renderChatState() {
@@ -37,17 +37,8 @@ function formulaProblems(r) {
     return out;
 }
 
-/** The rules templates in the shared shape (made on first use). */
-function templateStore() {
-    const s = settings();
-    if (!isTemplateStore(s.rulesTemplates)) {
-        s.rulesTemplates = newStore({ activeRules: s.rules || {}, activeName: 'My rules', builtIns: BUILT_INS });
-        ctx().saveSettingsDebounced();
-    }
-    return s.rulesTemplates;
-}
-
-const BUILT_INS = [{ id: 'builtin:generic', name: 'Generic (default)', rules: GENERIC_RULES }, { id: 'builtin:none', name: 'None (no rules)', rules: {} }];
+/** The rules templates in the shared shape (settings() makes them; built-ins are never stored). */
+const templateStore = () => settings().rulesTemplates;
 
 function mountRules(html) {
     const host = html.find('#gs_rules_tpl')[0];
@@ -59,8 +50,8 @@ function mountRules(html) {
         store: templateStore,
         save: () => ctx().saveSettingsDebounced(),
         validate: (obj) => formulaProblems(normalizeRules(obj)),
-        apply: (obj) => {
-            settings().rules = obj;
+        apply: () => {
+            // the store already has the active id: the engine reads the rules by it
             ctx().saveSettingsDebounced();
             const r = applyRules();
             window.NPCBook?.refreshScene();

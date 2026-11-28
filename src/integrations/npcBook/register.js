@@ -6,6 +6,7 @@ import { generateInChat } from '../../chat/generation.js';
 import { renderSheet } from '../../ui/sheet/index.js';
 import { newNpcRule, addSheetToExample } from './prompt.js';
 import { sceneButton } from './sceneButton.js';
+import { renderEquipment } from '../../ui/sheet/equipment.js';
 
 let npcBook = null;
 
@@ -61,7 +62,39 @@ const definition = () => ({
     transformInstructions,
     fromTracker,
     sceneButton,
+    // The Equipment tab on the scene cards (NPC Book API 14): what the character holds now
+    sceneTabs: [{ id: 'equipment', label: 'Equipment', icon: 'fa-hand-fist', kinds: ['char', 'user'], render: renderEquipmentTab }],
 });
+
+/**
+ * An NPC whose chat copy has no sheet of its own uses its card's sheet (as the prompt does): the tab starts from a copy
+ * of it, and Save makes it this chat's own copy.
+ */
+function renderEquipmentTab(host, ctx) {
+    if (ctx.kind === 'char' && !normalizeSheet(ctx.data).enabled) {
+        const tid = ctx.instance?.instanceOf ?? ctx.id;
+        const card = npcBook?.getExtData(tid, EXT_ID, { scope: 'template' });
+        if (card && normalizeSheet(card).enabled) Object.assign(ctx.data, JSON.parse(JSON.stringify(card)));
+    }
+    renderEquipment(host, ctx.data);
+}
+
+/** The sheet a scene character uses now (key: 'user' or an NPC id) and where it is stored, or null. */
+export function sheetOfKey(key) {
+    if (!npcBook) return null;
+    if (key === 'user') { const d = npcBook.getPersonaData(EXT_ID); return d ? { data: normalizeSheet(d), ref: null, scope: 'persona' } : null; }
+    const inst = npcBook.getInstance(key);
+    if (!inst) return null;
+    const own = inst.ext?.[EXT_ID];
+    if (own && normalizeSheet(own).enabled) return { data: normalizeSheet(JSON.parse(JSON.stringify(own))), ref: inst.id, scope: 'instance' };
+    const card = npcBook.getExtData(inst.instanceOf ?? inst.id, EXT_ID, { scope: 'template' });
+    return card && normalizeSheet(card).enabled ? { data: normalizeSheet(card), ref: inst.id, scope: 'instance' } : null;
+}
+
+/** Store a scene character's sheet (as found by sheetOfKey). */
+export function storeSheetOfKey(found, data) {
+    return !!npcBook?.setExtData(found.ref, EXT_ID, data, { scope: found.scope });
+}
 
 export function register(api) {
     npcBook = api;

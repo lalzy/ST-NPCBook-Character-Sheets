@@ -69,7 +69,8 @@ function attackBlock(data, b) {
     ${field('Damage', bIn(b, 'damage', '', 'e.g. 1d8+[Str_mod] cut'), 'Dice, sw / thr, or a number; formulas in [brackets]; then a type word.')}
     ${field('Delivery', bSel('use', opts(ABILITY_USES, b.use || 'melee', x => USE_LABEL[x])), 'Melee can be parried. Direct: no defense.')}
     ${field(melee ? 'Reach' : 'Range', `<input class="text_pole gs-bf" type="number" min="0" data-field="range" value="${esc(b.range || '')}" placeholder="${melee ? '1' : 'any'}">`, melee ? 'Empty = 1.' : 'In your rules\' unit.', 'gs-fnum')}
-    ${field('Hits', bSel('hits', opts(['roll', 'auto'], b.hits || 'roll', x => (x === 'auto' ? 'always (no roll)' : 'roll'))), 'Always: no attack roll or defense.')}`;
+    ${field('Hits', bSel('hits', opts(['roll', 'auto'], b.hits || 'roll', x => (x === 'auto' ? 'always (no roll)' : 'roll'))), 'Always: no attack roll or defense.')}
+    ${field('Effects', bIn(b, 'effects', '', 'e.g. fire-damage'), 'Rule effects of this attack only (your rules\' macros). Separate with ;', 'gs-ffull')}`;
 }
 
 function defenseBlock(data, b) {
@@ -118,6 +119,7 @@ function abilityBlock(data, b, e) {
     ${field('Hits', bSel('hits', opts(['roll', 'auto'], b.hits || 'roll', x => (x === 'auto' ? 'always' : 'roll'))), 'Always: no roll, defense or resistance.')}
     ${field('Cost', bIn(b, 'cost', 'type="number" min="0"', '0'), 'Per use.', 'gs-fnum')}
     ${field('Paid from', bSel('resource', `<option value="">${pools.length ? '(first pool)' : '— nothing'}</option>${opts(pools.map(p => p[0]), b.resource, x => pools.find(p => p[0] === x)?.[1] || x)}`), 'Your rules\' pools, or this item\'s charges.')}
+    ${field('Effects', bIn(b, 'effects', '', 'e.g. explosive 3; missile'), 'Rule effects of this ability (your rules\' macros). Separate with ;', 'gs-ffull')}
     ${field('Story notes', bIn(b, 'effect', '', 'How it looks, limits… (sent to the AI)'), 'For the AI only.', 'gs-ffull')}`;
 }
 
@@ -197,6 +199,8 @@ const itemCard = (data, acts) => (e, i) => {
                   ${field('Weight', `<input class="text_pole gs-f" type="number" min="0" step="0.1" data-list="equipment" data-field="weight" value="${esc(e.weight)}">`, 'Each. Counts toward encumbrance.', 'gs-fnum')}
                   ${field('Value', `<input class="text_pole gs-f" type="number" min="0" data-list="equipment" data-field="value" value="${esc(e.value)}">`, 'Each.', 'gs-fnum')}
                   ${field('Equipped', `<input type="checkbox" class="gs-equip" ${e.equipped === false ? '' : 'checked'}>`, 'Worn / in hand.', 'gs-fnum')}
+                  ${field('Hands', `<select class="text_pole gs-f" data-list="equipment" data-field="hands">${[['', '1 (not set)'], ['1', '1'], ['2', '2']].map(([v, l]) => `<option value="${v}"${String(e.hands ?? '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`, 'How many hands it takes to hold (Equipment tab). Two-handed fills both hands.', 'gs-fnum')}
+                  ${field('Effects', `<input class="text_pole gs-f" data-list="equipment" data-field="effects" value="${esc(e.effects ?? '')}" placeholder="e.g. fire-damage; immunity cold">`, 'Rule effects of the item (your rules\' macros): on every attack of it, and on whoever carries it. Separate with ;. The name never does anything.', 'gs-ffull')}
                   ${field('Story notes', `<input class="text_pole gs-f" data-list="equipment" data-field="effect" value="${esc(e.effect)}" placeholder="Looks, history… (sent to the AI)">`, 'For the AI only. Combat reads the blocks.', 'gs-ffull')}
                 </div>
                 ${(Array.isArray(e.blocks) ? e.blocks : []).map(blockHtml(data, e)).join('')}

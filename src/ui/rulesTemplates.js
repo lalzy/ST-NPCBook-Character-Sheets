@@ -10,7 +10,8 @@
 //
 // Stored in each extension's own settings as
 //   rulesTemplates: { active: id, items: { [id]: { name, rules, updatedAt } } }
-// Built-in templates come from code and are never stored.
+// Built-in templates come from code and are never stored. Only the active template's id is kept (ids are internal,
+// made from the name); the extension reads the rules by that id each time it starts something (templateRules).
 
 export const RT_VERSION = 1;
 
@@ -51,7 +52,10 @@ export function newStore({ activeRules, activeName = 'My rules', builtIns = [] }
     let active = builtIns[0]?.id || '';
     if (isObj(activeRules)) {
         const want = stableJson(activeRules);
-        const hit = builtIns.find(b => stableJson(b.rules) === want)?.id;
+        // a copy of a built-in (the same rules, or a built-in's own name: an older copy of it) is that built-in, read
+        // from code from now on; anything else is the user's own template
+        const nm = String(activeRules.name ?? '').trim();
+        const hit = builtIns.find(b => stableJson(b.rules) === want)?.id || (nm && builtIns.find(b => String(b.rules?.name ?? '').trim() === nm)?.id);
         if (hit) active = hit;
         else {
             active = uniqueId(activeName, (id) => builtIns.some(b => b.id === id));
@@ -59,6 +63,18 @@ export function newStore({ activeRules, activeName = 'My rules', builtIns = [] }
         }
     }
     return { active, items };
+}
+
+/**
+ * The rules of template `id` (default: the active one): a built-in's straight from code, else the user's template.
+ * An unknown id falls back to the first built-in. A fresh copy each call.
+ */
+export function templateRules(store, builtIns, id = store?.active) {
+    const b = builtIns.find(x => x.id === id);
+    if (b) return copy(b.rules);
+    const t = isObj(store?.items) ? store.items[id] : null;
+    if (isObj(t) && isObj(t.rules)) return copy(t.rules);
+    return copy(builtIns[0]?.rules);
 }
 
 const CSS = `

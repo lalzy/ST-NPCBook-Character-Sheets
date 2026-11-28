@@ -7,6 +7,7 @@ export { EMPTY_RULES, BLANK_TEMPLATE, normalizeRules, setRules, rules, skillsUse
 export { evalFormula, formulaError } from '../rules/formula.js';
 export { abilityUse, isAttackAbility, abilityFx, abilityAim, fxText, abilityLevel, untrainedLevel, computeAbilities, abilityReachText, resourceNames, resourceOf } from './abilities.js';
 export { defaultSheet, isBlankSheet, normalizeSheet } from './sheet.js';
+export { itemHands, holdable, heldOf, handednessOf, handLabels, setHeld, twoOf } from './held.js';
 export { basicLift, damage } from './strength.js';
 export { compute, hpRollInfo } from './compute.js';
 export { xmlName, toXml } from './xml.js';

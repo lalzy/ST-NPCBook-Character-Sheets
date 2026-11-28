@@ -69,6 +69,7 @@ const abilityRow = (data) => (a, i) => {
                   ${cell('On save', `<select class="text_pole gs-f" data-list="abilities" data-field="save" ${dis(!!a.resist && a.dc !== null)}>${options(SAVE_RESULTS, a.save, x => SAVE_LABEL[x])}</select>`)}
                 </div>
                 <div class="gs-abline">
+                  ${cell('Effects', `<input class="text_pole gs-f" data-list="abilities" data-field="effects" value="${esc(raw.effects ?? '')}" placeholder="Rule effects (your rules' macros), e.g. explosive 3; missile" title="Optional. What it does by rule, beside the Effect above. Separate with ;. Empty is fine: notes and the AI narrate the rest.">`, 'gs-abfull')}
                   ${cell('Notes', `<input class="text_pole gs-f" data-list="abilities" data-field="effect" value="${esc(a.effect)}" placeholder="What it does in the story, limits, special cases… (sent to the AI)">`, 'gs-abfull')}
                 </div>
               </div>`;

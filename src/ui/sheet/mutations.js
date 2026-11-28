@@ -49,6 +49,7 @@ export function addItem(data, preset) {
         e.category = preset.category || '';
         if (preset.qty) e.qty = preset.qty;
         if (preset.effect) e.effect = preset.effect;
+        if (preset.hands) e.hands = preset.hands;
         e.blocks = (preset.blocks || []).filter(b => NEW_BLOCK[b.type]).map(b => ({ ...NEW_BLOCK[b.type](), ...JSON.parse(JSON.stringify(b)) }));
     }
     data.equipment.push(e);

@@ -16,6 +16,8 @@ export function defaultSheet() {
         hpRolls: [],    // HP dice rolled so far (rules hpRoll), one per level
         reactions: [],  // { name, groups: [{ who, mod }] }
         notes: '',
+        held: { primary: '', off: '' }, // what it holds now (item names; the Equipment tab). See held.js
+        handedness: '', // one of rules.hands.handedness (names its hands); '' = the first
     };
 }
 
@@ -34,5 +36,7 @@ export function normalizeSheet(s) {
     o.attrs = { ...d.attrs, ...(s?.attrs || {}) };
     o.sec = { ...(s?.sec || {}) };
     for (const k of ['traits', 'skills', 'equipment', 'abilities', 'reactions', 'hpRolls']) o[k] = Array.isArray(s?.[k]) ? s[k] : [];
+    o.held = { primary: String(s?.held?.primary ?? '').trim(), off: String(s?.held?.off ?? '').trim() };
+    o.handedness = String(s?.handedness ?? '').trim();
     return o;
 }
